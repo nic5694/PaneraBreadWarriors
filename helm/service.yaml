@@ -11,5 +11,5 @@ spec:
     protocol: TCP
     targetPort: 5000
   selector:
-    app: service
+    app: deployment
   type: LoadBalancer

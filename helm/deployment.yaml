@@ -18,7 +18,6 @@ spec:
       containers:
       - image: nic5694/pe-engineering-hackathon:latest
         imagePullPolicy: Always
-        restartPolicy: Always
         name: api
         ports:
         - containerPort: 5000
