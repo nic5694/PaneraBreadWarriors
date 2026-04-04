@@ -31,6 +31,18 @@ def _run_compose_command(*args):
     )
 
 
+def _get_postgres_mapped_port():
+    result = subprocess.run(
+        ["docker", "compose", "-f", str(DOCKER_COMPOSE_FILE), "port", "postgres", "5432"],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    mapping = result.stdout.strip().splitlines()[-1]
+    return int(mapping.rsplit(":", 1)[-1])
+
+
 def _wait_for_postgres(host, port, database, user, password, timeout_seconds=90):
     deadline = time.time() + timeout_seconds
     last_error = None
@@ -60,7 +72,6 @@ def _wait_for_postgres(host, port, database, user, password, timeout_seconds=90)
 def postgres_service():
     os.environ["DATABASE_NAME"] = "hackathon_db"
     os.environ["DATABASE_HOST"] = "127.0.0.1"
-    os.environ["DATABASE_PORT"] = "5432"
     os.environ["DATABASE_USER"] = "postgres"
     os.environ["DATABASE_PASSWORD"] = "postgres"
 
@@ -69,6 +80,14 @@ def postgres_service():
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(
             "Failed to start postgres with docker compose. "
+            f"stdout={exc.stdout} stderr={exc.stderr}"
+        ) from exc
+
+    try:
+        os.environ["DATABASE_PORT"] = str(_get_postgres_mapped_port())
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(
+            "Failed to resolve mapped postgres port. "
             f"stdout={exc.stdout} stderr={exc.stderr}"
         ) from exc
 
