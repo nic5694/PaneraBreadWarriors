@@ -5,6 +5,7 @@ metadata:
   labels:
     app: reset-load-test-data
 spec:
+  suspend: true
   backoffLimit: 1
   ttlSecondsAfterFinished: 60
   template:
