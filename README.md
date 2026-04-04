@@ -4,6 +4,12 @@ A resilient backend service that stays running.
 
 **Stack:** Flask · Peewee ORM · PostgreSQL · uv · ArgoCD · Proxmox
 
+<img width="333" height="333" alt="medium" src="screenshots/GitRev.png" />
+
+Track #1 Reliability
+Track #2 Scalability
+Track #3 Incident Response
+
 ## Prerequisites
 
 - **uv** — a fast Python package manager that handles Python versions, virtual environments, and dependencies automatically.
@@ -82,6 +88,7 @@ PaneraBreadWarriors/
 ├── docs/
 │   └── API.md               # API endpoint documentation
 ├── helm/                    # Helm charts for deployment
+├── screenshots/             # Screeshots and Logo
 ├── seed/                    # Database seed files
 ├── tests/                   # Unit and integration tests
 ├── .env.example
@@ -92,4 +99,13 @@ PaneraBreadWarriors/
 
 # API Docs
 See `Docs/API.md` for full endpoint documentation.
+
+# Contributors
+- Nic Martoccia
+- Han Lee
+- Luciano Scarpaci
+
+# screenshots
+
+# Demo
 
