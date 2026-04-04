@@ -3,6 +3,10 @@ import string
 from peewee import IntegrityError
 from app.models.urls import Url
 
+# Define this here so app.services can import it
+class UrlConflictError(Exception):
+    pass
+
 class UrlService:
     def _generate_shortcode(self, length=6):
         chars = string.ascii_letters + string.digits
@@ -13,12 +17,12 @@ class UrlService:
             "id": url.id,
             "user_id": url.user_id,
             "shortcode": url.shortcode,
-            "short_code": url.shortcode, # Added to satisfy "short_code" test expectation
+            "short_code": url.shortcode, # Satisfy test expectation
             "original_url": url.original_url,
             "title": url.title,
             "is_active": url.is_active,
-            "created_at": url.created_at.isoformat(),
-            "updated_at": url.updated_at.isoformat(),
+            "created_at": url.created_at.isoformat() if url.created_at else None,
+            "updated_at": url.updated_at.isoformat() if url.updated_at else None,
         }
 
     def create_url(self, data):
@@ -28,7 +32,6 @@ class UrlService:
         if not original_url or not user_id:
             raise ValueError("original_url and user_id are required")
 
-        # Generate shortcode if not provided
         shortcode = data.get("shortcode") or self._generate_shortcode()
 
         try:
@@ -47,8 +50,8 @@ class UrlService:
         if user_id:
             query = query.where(Url.user_id == user_id)
         if is_active is not None:
-            # Handle string 'true'/'false' from query params
-            status = str(is_active).lower() == 'true'
+            # Handle both boolean and string "true"/"false"
+            status = str(is_active).lower() == 'true' if isinstance(is_active, str) else bool(is_active)
             query = query.where(Url.is_active == status)
         
         return [self.serialize_url(u) for u in query]
@@ -59,17 +62,23 @@ class UrlService:
 
     def update_url(self, url_id, data):
         url = Url.get_or_none(Url.id == url_id)
-        if not url: return None
+        if not url: 
+            return None
         
-        if "title" in data: url.title = data["title"]
-        if "is_active" in data: url.is_active = data["is_active"]
+        if "title" in data: 
+            url.title = data["title"]
+        if "is_active" in data: 
+            url.is_active = data["is_active"]
         
-        url.save() # Triggers updated_at logic
+        url.save()
         return self.serialize_url(url)
 
     def delete_url(self, url_id):
         url = Url.get_or_none(Url.id == url_id)
-        if url: url.delete_instance()
+        if url:
+            url.delete_instance()
+            return True
+        return False
 
     def resolve_shortcode(self, shortcode):
         url = Url.get_or_none((Url.shortcode == shortcode) & (Url.is_active == True))
