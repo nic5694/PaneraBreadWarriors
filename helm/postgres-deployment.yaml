@@ -20,7 +20,7 @@ spec:
         imagePullPolicy: IfNotPresent
         args:
         - -c
-        - max_connections=300
+        - max_connections=500
         ports:
         - containerPort: 5432
           protocol: TCP

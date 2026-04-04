@@ -20,8 +20,15 @@ def reset_database(seed_data=True):
                 "TRUNCATE TABLE events, urls, users RESTART IDENTITY CASCADE;"
             )
 
+            # Seed after truncation if requested
+            # RESTART IDENTITY CASCADE guarantees empty tables, so no need for a separate count query
             if seed_data:
-                seed_database()
+                try:
+                    seed_database()
+                    print("Database seeded successfully.")
+                except Exception as e:
+                    print(f"Seeding failed: {e}")
+                    raise
 
 
 def main():
