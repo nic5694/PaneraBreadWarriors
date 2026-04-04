@@ -88,7 +88,7 @@ def create_user():
     if not name or not email or not password:
         return jsonify({
             "error": {
-                "code": "VALIDATION_ERROR",
+                "code": "BAD_REQUEST",
                 "message": "name, email, and password are required"
             }
         }), 400
@@ -138,7 +138,7 @@ def update_user(user_id):
     if name is None and email is None:
         return jsonify({
             "error": {
-                "code": "VALIDATION_ERROR",
+                "code": "BAD_REQUEST",
                 "message": "At least one updatable field is required"
             }
         }), 400

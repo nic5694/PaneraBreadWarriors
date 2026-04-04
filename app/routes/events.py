@@ -48,7 +48,7 @@ def create_event():
     if not url_id or not event_type:
         return jsonify({
             "error": {
-                "code": "VALIDATION_ERROR",
+                "code": "BAD_REQUEST",
                 "message": "url_id and event_type are required"
             }
         }), 400

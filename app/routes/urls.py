@@ -66,7 +66,7 @@ def create_url():
     if not user_id or not shortcode or not original_url:
         return jsonify({
             "error": {
-                "code": "VALIDATION_ERROR",
+                "code": "BAD_REQUEST",
                 "message": "user_id, shortcode, and original_url are required"
             }
         }), 400
