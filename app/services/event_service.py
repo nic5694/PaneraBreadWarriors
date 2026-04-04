@@ -20,13 +20,18 @@ class EventCreateError(Exception):
 
 class EventService:
     def serialize_event(self, event):
-        # Attempt to parse 'details' back into a dict/list if it's a JSON string
-        # This ensures the API returns actual JSON objects instead of escaped strings
+        """
+        Converts a Peewee Event model instance into a dictionary.
+        Handles JSON parsing for the 'details' field to ensure the 
+        API returns structured data.
+        """
         details = event.details
+        # Advanced Challenge #6: Ensure 'details' is returned as a JSON object, not a string
         if isinstance(details, str):
             try:
                 details = json.loads(details)
             except (ValueError, TypeError):
+                # If it's not valid JSON, return the raw string
                 pass
 
         return {
@@ -42,12 +47,13 @@ class EventService:
 
     def list_events(self, filters=None):
         """
-        Retrieves events with optional filtering.
-        :param filters: dict containing url_id, user_id, or event_type
+        Retrieves events from the database with support for optional filtering.
+        Fixes: test_get_events_by_url, test_get_events_by_user, test_get_events_by_type
         """
         query = Event.select()
 
         if filters:
+            # Cast filters to string to match the CharField/TextField types in the model
             if filters.get("url_id"):
                 query = query.where(Event.url_id == str(filters["url_id"]))
             if filters.get("user_id"):
@@ -55,6 +61,7 @@ class EventService:
             if filters.get("event_type"):
                 query = query.where(Event.event_type == filters["event_type"])
 
+        # Order by ID to ensure consistent test results
         events = query.order_by(Event.id)
         return [self.serialize_event(event) for event in events]
 
@@ -65,18 +72,15 @@ class EventService:
         if not url_id or not event_type:
             raise ValueError("url_id and event_type are required")
 
-        # Validate that the URL exists.
+        # Validate that the referenced URL exists
         try:
             Url.get_by_id(url_id)
         except Url.DoesNotExist as exc:
             raise UrlNotFoundError(f"URL with id {url_id} not found") from exc
         except Exception as exc:
-            logger.warning(
-                "Error validating URL for event. url_id=%s error=%s",
-                url_id,
-                exc,
-            )
+            logger.warning("Validation error for url_id=%s: %s", url_id, exc)
 
+        # Ensure complex 'details' are stored as a JSON string
         details = data.get("details")
         if isinstance(details, (dict, list)):
             details = json.dumps(details)
@@ -91,12 +95,9 @@ class EventService:
         try:
             event = Event.create(**create_payload)
         except IntegrityError as exc:
-            # Handle Postgres sequence drift
+            # Handle potential Postgres ID sequence drift
             if "events_pkey" in str(exc):
-                logger.warning(
-                    "Detected events id sequence drift. Resyncing sequence. error=%s",
-                    exc,
-                )
+                logger.warning("Detected sequence drift. Resyncing 'events_id_seq'.")
                 Event._meta.database.execute_sql(
                     """
                     SELECT setval(
@@ -110,11 +111,7 @@ class EventService:
             else:
                 raise
         except Exception as exc:
-            logger.exception(
-                "Failed to create event. payload=%s error=%s",
-                data,
-                exc,
-            )
+            logger.exception("Failed to create event. Data: %s", data)
             raise EventCreateError(str(exc)) from exc
 
         return self.serialize_event(event)
