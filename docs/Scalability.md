@@ -4,11 +4,12 @@ Scalability of GitRev is built upon it's kubenetes deployment. The application i
 
 ## Tier 1: Bronze
 
-**Status:** In Progress
+**Status:** Completed
 
 **Objective:** Establish performance baseline under load.
 
 **Main Objectives:**
+
 - Load test with 50 concurrent users
 - Document baseline response times (P95)
 - Measure error rates
@@ -19,20 +20,23 @@ Scalability of GitRev is built upon it's kubenetes deployment. The application i
 | Metric | Target | Actual |
 |--------|--------|--------|
 | Concurrent Users | 50 | 50 |
-| P95 Response Time | < 1000ms | - |
-| Error Rate | < 1% | - |
-| Throughput (req/s) | - | - |
-| Total Requests | - | - |
-| Failed Requests | - | - |
+| P95 Response Time | < 1000ms | 960ms (aggregated) |
+| Error Rate | < 1% | 0% |
+| Throughput (req/s) | - | 58.09 |
+| Total Requests | - | 6990 |
+| Failed Requests | 0 | 0 |
 
-**Test Run Date:** -  
-**Test Duration:** -  
-**Notes:** -
+**Test Run Date:** 2026-04-04  
+**Test Duration:** 2m  
+**Notes:** Tier 1 baseline passed with zero failures. The aggregated P95 met the target, while the slowest endpoint was `GET /events/v1/api/events/` at ~1100ms P95.
 
 **Verification:**
-- CSV results file: -
-- Screenshot: -
-- Logs: -
+- [CSV results file](../loadtest/results/tier1-baseline/tier1-50users_stats.csv)
+- [Failures CSV](../loadtest/results/tier1-baseline/tier1-50users_failures.csv)
+- [Exceptions CSV](../loadtest/results/tier1-baseline/tier1-50users_exceptions.csv)
+- Screenshot: 
+![alt text](./images/load_test_logs-tier1.png)
+- Logs: 0 failures and 0 exceptions recorded in the tier1 baseline artifacts.
 
 ---
 
