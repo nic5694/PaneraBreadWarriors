@@ -6,6 +6,34 @@ from app.models.urls import Url
 urls_bp = Blueprint("urls", __name__)
 
 
+def _extract_constraint_name(exc):
+    wrapped_exc = getattr(exc, "__cause__", None) or getattr(exc, "orig", None)
+    if wrapped_exc is not None:
+        diag = getattr(wrapped_exc, "diag", None)
+        if diag is not None:
+            return getattr(diag, "constraint_name", None)
+    return None
+
+
+def _classify_url_integrity_error(exc):
+    constraint_name = _extract_constraint_name(exc)
+    error_text = str(exc).lower()
+
+    if constraint_name and "shortcode" in constraint_name:
+        return "shortcode already exists"
+
+    if constraint_name and "urls_pkey" in constraint_name:
+        return "url id sequence is out of sync"
+
+    if "shortcode" in error_text and "duplicate" in error_text:
+        return "shortcode already exists"
+
+    if "urls_pkey" in error_text or "duplicate key value" in error_text:
+        return "url id sequence is out of sync"
+
+    return "database integrity conflict"
+
+
 def serialize_url(url):
     return {
         "id": url.id,
@@ -50,11 +78,11 @@ def create_url():
             original_url=original_url,
             title=data.get("title"),
         )
-    except IntegrityError:
+    except IntegrityError as exc:
         return jsonify({
             "error": {
                 "code": "CONFLICT",
-                "message": "shortcode already exists"
+                "message": _classify_url_integrity_error(exc)
             }
         }), 409
 

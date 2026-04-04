@@ -6,6 +6,35 @@ from app.models.users import User
 users_bp = Blueprint("users", __name__, url_prefix="/users/v1/api/users")
 
 
+def _extract_constraint_name(exc):
+    # Peewee wraps driver exceptions; inspect diagnostics when available.
+    wrapped_exc = getattr(exc, "__cause__", None) or getattr(exc, "orig", None)
+    if wrapped_exc is not None:
+        diag = getattr(wrapped_exc, "diag", None)
+        if diag is not None:
+            return getattr(diag, "constraint_name", None)
+    return None
+
+
+def _classify_user_integrity_error(exc):
+    constraint_name = _extract_constraint_name(exc)
+    error_text = str(exc).lower()
+
+    if constraint_name and "email" in constraint_name:
+        return "email already exists"
+
+    if constraint_name and "users_pkey" in constraint_name:
+        return "user id sequence is out of sync"
+
+    if "email" in error_text and "duplicate" in error_text:
+        return "email already exists"
+
+    if "users_pkey" in error_text or "duplicate key value" in error_text:
+        return "user id sequence is out of sync"
+
+    return "database integrity conflict"
+
+
 def serialize_user(user):
     return {
         "id": user.id,
@@ -70,11 +99,11 @@ def create_user():
             email=email,
             password_hash=password,
         )
-    except IntegrityError:
+    except IntegrityError as exc:
         return jsonify({
             "error": {
                 "code": "CONFLICT",
-                "message": "email already exists"
+                "message": _classify_user_integrity_error(exc)
             }
         }), 409
 
@@ -122,11 +151,11 @@ def update_user(user_id):
 
     try:
         user.save()
-    except IntegrityError:
+    except IntegrityError as exc:
         return jsonify({
             "error": {
                 "code": "CONFLICT",
-                "message": "email already exists"
+                "message": _classify_user_integrity_error(exc)
             }
         }), 409
 

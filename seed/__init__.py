@@ -20,6 +20,31 @@ def _parse_datetime(value):
     return datetime.fromisoformat(value) if value else None
 
 
+def _sync_sequence(model):
+    table_name = model._meta.table_name
+    pk_column = model._meta.primary_key.column_name
+
+    cursor = db.execute_sql(
+        "SELECT pg_get_serial_sequence(%s, %s)",
+        (table_name, pk_column),
+    )
+    sequence_name = cursor.fetchone()[0]
+
+    if not sequence_name:
+        return
+
+    db.execute_sql(
+        f'''
+        SELECT setval(
+            %s,
+            COALESCE((SELECT MAX("{pk_column}") FROM "{table_name}"), 1),
+            (SELECT MAX("{pk_column}") IS NOT NULL FROM "{table_name}")
+        )
+        ''',
+        (sequence_name,),
+    )
+
+
 def seed_users():
     User.delete().execute()
 
@@ -77,3 +102,6 @@ def seed_database():
         seed_users()
         seed_urls()
         seed_events()
+        _sync_sequence(User)
+        _sync_sequence(Url)
+        _sync_sequence(Event)
