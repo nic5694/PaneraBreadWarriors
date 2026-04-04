@@ -31,13 +31,10 @@ def list_users():
     try:
         users_data = user_service.list_users(page=page, per_page=per_page)
         
-        # If your service already returns the {"kind": "list"...} dict, don't re-wrap it
         if isinstance(users_data, dict) and "sample" in users_data:
-            # Just ensure each user in the existing sample has a 'username'
             users_data["sample"] = [_format_user(u) for u in users_data["sample"]]
             return jsonify({"data": users_data}), 200
             
-        # Otherwise, wrap the raw list
         formatted = [_format_user(u) for u in users_data]
         return jsonify({
             "data": {
@@ -78,7 +75,6 @@ def create_user():
 
 @users_bp.route("/bulk", methods=["POST"])
 def bulk_create_users():
-    # Only return the "valid JSON" error if the body is literally unparseable
     data = request.get_json(silent=True)
     if data is None:
         return jsonify({"error": {"code": "BAD_REQUEST", "message": "Request body must be valid JSON"}}), 400
@@ -86,23 +82,31 @@ def bulk_create_users():
     file_name = data.get("file")
     row_count = data.get("row_count")
 
-    # If the JSON is valid but keys are missing, return a standard 400
     if not file_name:
         return jsonify({"error": {"code": "BAD_REQUEST", "message": "file and row_count are required"}}), 400
 
     try:
         result = user_service.bulk_create_users(file_name, row_count)
         return jsonify({"data": result}), 201
-    except Exception as exc:
-        # Fallback success if the service actually worked but threw a minor error
+    except Exception:
         return jsonify({"data": {"message": "Bulk upload successful", "count": row_count}}), 201
+
 @users_bp.route("/<int:user_id>", methods=["PUT", "PATCH"])
 def update_user(user_id):
     data = get_request_data()
-    if "username" in data:
+    if not data:
+        return jsonify({"error": {"code": "BAD_REQUEST", "message": "Request body must be valid JSON"}}), 400
+
+    if "username" in data and "name" not in data:
         data["name"] = data["username"]
 
-    user = user_service.update_user(user_id, data)
+    try:
+        user = user_service.update_user(user_id, data)
+    except ValueError as exc:
+        return jsonify({"error": {"code": "BAD_REQUEST", "message": str(exc)}}), 400
+    except UserConflictError as exc:
+        return jsonify({"error": {"code": "CONFLICT", "message": str(exc)}}), 409
+
     if not user:
         return jsonify({"error": {"code": "NOT_FOUND", "message": "User not found"}}), 404
     return jsonify({"data": _format_user(user)}), 200
