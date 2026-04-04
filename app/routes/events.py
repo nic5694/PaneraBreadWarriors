@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, jsonify, request
 from peewee import IntegrityError
 
 from app.models.events import Event
+from app.models.urls import Url
 
 events_bp = Blueprint("events", __name__, url_prefix="/events/v1/api/events")
 
@@ -51,6 +52,25 @@ def create_event():
                 "message": "url_id and event_type are required"
             }
         }), 400
+
+    # Validate that the URL exists
+    try:
+        Url.get_by_id(url_id)
+    except Url.DoesNotExist:
+        return jsonify({
+            "error": {
+                "code": "NOT_FOUND",
+                "message": f"URL with id {url_id} not found"
+            }
+        }), 404
+    except Exception as exc:
+        current_app.logger.warning(
+            "Error validating URL for event. url_id=%s error=%s",
+            url_id,
+            exc,
+        )
+        # Don't fail the event creation if URL validation fails due to DB issues
+        pass
 
     details = data.get("details")
     if isinstance(details, (dict, list)):

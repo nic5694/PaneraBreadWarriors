@@ -35,9 +35,11 @@ spec:
         - name: DATABASE_PASSWORD
           value: postgres
         - name: DATABASE_MAX_CONNECTIONS
-          value: "30"
+          value: "5"
         - name: DATABASE_STALE_TIMEOUT
           value: "300"
+        - name: DATABASE_TIMEOUT
+          value: "5"
         ports:
         - containerPort: 5000
           protocol: TCP
