@@ -2,11 +2,13 @@
 
 A resilient backend service that stays running.
 
-**Stack:** https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white · https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white · https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white · https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white · https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white · https://img.shields.io/badge/Proxmox-E57000?style=for-the-badge&logo=proxmox&logoColor=white
+**Tech Stack:** ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white) ![Peewee ORM](https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white) ![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white) ![Proxmox](https://img.shields.io/badge/Proxmox-E57000?style=for-the-badge&logo=proxmox&logoColor=white)
 
-**Deployment:** https://img.shields.io/badge/Production-Live-brightgreen?style=for-the-badge&logo=checkmarx&logoColor=white
+**Deployment:** ![Production](https://img.shields.io/badge/Production-Live-brightgreen?style=for-the-badge&logo=checkmarx&logoColor=white)
 
-**CI Status:**[![codecov](https://codecov.io/gh/nic5694/PaneraBreadWarriors/branch/main/graph/badge.svg)](https://codecov.io/gh/nic5694/PaneraBreadWarriors)
+**CI Status:** [![codecov](https://codecov.io/gh/nic5694/PaneraBreadWarriors/branch/main/graph/badge.svg)](https://codecov.io/gh/nic5694/PaneraBreadWarriors)
+[![Build and push Docker image](https://img.shields.io/github/actions/workflow/status/nic5694/PaneraBreadWarriors/python_ci.yml?branch=main&label=Build+%26+Push+Docker&style=for-the-badge&logo=docker&logoColor=white)](https://github.com/nic5694/PaneraBreadWarriors/actions/workflows/python_ci.yml)
+[![Run tests and collect coverage](https://img.shields.io/github/actions/workflow/status/nic5694/PaneraBreadWarriors/python_ci.yml?branch=main&label=Tests+%26+Coverage&style=for-the-badge&logo=pytest&logoColor=white)](https://github.com/nic5694/PaneraBreadWarriors/actions/workflows/python_ci.yml)
 
 <img width="333" height="333" alt="medium" src="screenshots/GitRev.png" />
 
