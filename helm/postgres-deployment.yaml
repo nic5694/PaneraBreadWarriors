@@ -18,6 +18,9 @@ spec:
       - name: postgres
         image: postgres:16
         imagePullPolicy: IfNotPresent
+        args:
+        - -c
+        - max_connections=300
         ports:
         - containerPort: 5432
           protocol: TCP
@@ -28,6 +31,13 @@ spec:
           value: postgres
         - name: POSTGRES_PASSWORD
           value: postgres
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "2Gi"
         readinessProbe:
           exec:
             command:
