@@ -1,6 +1,7 @@
 import json
 
 from flask import Blueprint, current_app, jsonify, request
+from peewee import IntegrityError
 
 from app.models.events import Event
 
@@ -55,13 +56,35 @@ def create_event():
     if isinstance(details, (dict, list)):
         details = json.dumps(details)
 
+    create_payload = {
+        "url_id": str(url_id),
+        "user_id": str(data.get("user_id")) if data.get("user_id") is not None else None,
+        "event_type": event_type,
+        "details": details,
+    }
+
     try:
-        event = Event.create(
-            url_id=str(url_id),
-            user_id=str(data.get("user_id")) if data.get("user_id") is not None else None,
-            event_type=event_type,
-            details=details,
-        )
+        event = Event.create(**create_payload)
+    except IntegrityError as exc:
+        # If seed/import inserted explicit IDs, the sequence can lag behind max(id).
+        # Resync and retry once so event writes recover automatically.
+        if "events_pkey" in str(exc):
+            current_app.logger.warning(
+                "Detected events id sequence drift. Resyncing sequence. error=%s",
+                exc,
+            )
+            Event._meta.database.execute_sql(
+                """
+                SELECT setval(
+                    pg_get_serial_sequence('events', 'id'),
+                    COALESCE((SELECT MAX(id) FROM events), 1),
+                    true
+                )
+                """
+            )
+            event = Event.create(**create_payload)
+        else:
+            raise
     except Exception as exc:
         current_app.logger.exception(
             "Failed to create event. payload=%s error=%s",
