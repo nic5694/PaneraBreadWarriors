@@ -2,7 +2,11 @@
 
 A resilient backend service that stays running.
 
-**Stack:** Flask · Peewee ORM · PostgreSQL · uv · ArgoCD · Proxmox
+**Stack:** https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white · https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white · https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white · https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white · https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white · https://img.shields.io/badge/Proxmox-E57000?style=for-the-badge&logo=proxmox&logoColor=white
+
+**Deployment:** https://img.shields.io/badge/Production-Live-brightgreen?style=for-the-badge&logo=checkmarx&logoColor=white
+
+**CI Status:**[![codecov](https://codecov.io/gh/nic5694/PaneraBreadWarriors/branch/main/graph/badge.svg)](https://codecov.io/gh/nic5694/PaneraBreadWarriors)
 
 <img width="333" height="333" alt="medium" src="screenshots/GitRev.png" />
 
