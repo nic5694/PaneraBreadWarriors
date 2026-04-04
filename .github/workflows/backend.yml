@@ -1,4 +1,4 @@
-name: Run tests and upload coverage
+name: CI - Test, Build, and Tag Deployment
 
 on:
   push:
@@ -87,6 +87,19 @@ jobs:
           tags: |
             nic5694/pe-engineering-hackathon:${{ github.sha }}
             nic5694/pe-engineering-hackathon:latest
+
+  tag_commit_for_deployment:
+    name: Tag commit for deployment
+    needs: [test, push]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Move prd tag to pushed commit
         run: |
