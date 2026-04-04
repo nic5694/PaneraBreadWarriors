@@ -52,6 +52,22 @@ curl http://localhost:5000/health
 # → {"status":"ok"}
 ```
 
+## Reset For Load Tests
+
+Use this before a stress run if you want to clear persisted rows and reseed the cluster database with a Kubernetes Job:
+
+```bash
+kubectl apply -f helm/reset-load-test-job.yaml
+kubectl wait --for=condition=complete job/reset-load-test-data --timeout=120s
+```
+
+If you want to rerun the job, delete the previous one first:
+
+```bash
+kubectl delete job reset-load-test-data --ignore-not-found
+kubectl apply -f helm/reset-load-test-job.yaml
+```
+
 ## Project Structure
 
 ```
