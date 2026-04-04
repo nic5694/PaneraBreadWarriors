@@ -64,9 +64,13 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -83,3 +87,10 @@ jobs:
           tags: |
             nic5694/pe-engineering-hackathon:${{ github.sha }}
             nic5694/pe-engineering-hackathon:latest
+
+      - name: Move prd tag to pushed commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f prd "${GITHUB_SHA}"
+          git push origin refs/tags/prd --force
