@@ -32,3 +32,6 @@ Thumbs.db
 
 # Judging (not visible to participants)
 judging/
+
+# Local kubeconfig
+homelab.kubeconfig.yaml
