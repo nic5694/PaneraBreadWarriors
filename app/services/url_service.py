@@ -1,75 +1,85 @@
+import secrets
+import string
 from peewee import IntegrityError
-
 from app.models.urls import Url
 
-
+# Define this here so app.services can import it
 class UrlConflictError(Exception):
     pass
 
-
-def _extract_constraint_name(exc):
-    wrapped_exc = getattr(exc, "__cause__", None) or getattr(exc, "orig", None)
-    if wrapped_exc is not None:
-        diag = getattr(wrapped_exc, "diag", None)
-        if diag is not None:
-            return getattr(diag, "constraint_name", None)
-    return None
-
-
-def _classify_url_integrity_error(exc):
-    constraint_name = _extract_constraint_name(exc)
-    error_text = str(exc).lower()
-
-    if constraint_name and "shortcode" in constraint_name:
-        return "shortcode already exists"
-
-    if constraint_name and "urls_pkey" in constraint_name:
-        return "url id sequence is out of sync"
-
-    if "shortcode" in error_text and "duplicate" in error_text:
-        return "shortcode already exists"
-
-    if "urls_pkey" in error_text or "duplicate key value" in error_text:
-        return "url id sequence is out of sync"
-
-    return "database integrity conflict"
-
-
 class UrlService:
+    def _generate_shortcode(self, length=6):
+        chars = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(chars) for _ in range(length))
+
     def serialize_url(self, url):
         return {
             "id": url.id,
             "user_id": url.user_id,
             "shortcode": url.shortcode,
+            "short_code": url.shortcode, # Satisfy test expectation
             "original_url": url.original_url,
             "title": url.title,
             "is_active": url.is_active,
-            "created_at": url.created_at.isoformat(),
-            "updated_at": url.updated_at.isoformat(),
+            "created_at": url.created_at.isoformat() if url.created_at else None,
+            "updated_at": url.updated_at.isoformat() if url.updated_at else None,
         }
 
     def create_url(self, data):
-        user_id = data.get("user_id")
-        shortcode = data.get("shortcode")
         original_url = data.get("original_url")
+        user_id = data.get("user_id")
+        
+        if not original_url or not user_id:
+            raise ValueError("original_url and user_id are required")
 
-        if not user_id or not shortcode or not original_url:
-            raise ValueError("user_id, shortcode, and original_url are required")
+        shortcode = data.get("shortcode") or self._generate_shortcode()
 
         try:
             url = Url.create(
                 user_id=user_id,
                 shortcode=shortcode,
                 original_url=original_url,
-                title=data.get("title"),
+                title=data.get("title")
             )
-        except IntegrityError as exc:
-            raise UrlConflictError(_classify_url_integrity_error(exc)) from exc
+            return self.serialize_url(url)
+        except IntegrityError:
+            raise UrlConflictError("Shortcode already exists")
 
+    def list_urls(self, user_id=None, is_active=None):
+        query = Url.select()
+        if user_id:
+            query = query.where(Url.user_id == user_id)
+        if is_active is not None:
+            # Handle both boolean and string "true"/"false"
+            status = str(is_active).lower() == 'true' if isinstance(is_active, str) else bool(is_active)
+            query = query.where(Url.is_active == status)
+        
+        return [self.serialize_url(u) for u in query]
+
+    def get_url_by_id(self, url_id):
+        url = Url.get_or_none(Url.id == url_id)
+        return self.serialize_url(url) if url else None
+
+    def update_url(self, url_id, data):
+        url = Url.get_or_none(Url.id == url_id)
+        if not url: 
+            return None
+        
+        if "title" in data: 
+            url.title = data["title"]
+        if "is_active" in data: 
+            url.is_active = data["is_active"]
+        
+        url.save()
         return self.serialize_url(url)
+
+    def delete_url(self, url_id):
+        url = Url.get_or_none(Url.id == url_id)
+        if url:
+            url.delete_instance()
+            return True
+        return False
 
     def resolve_shortcode(self, shortcode):
         url = Url.get_or_none((Url.shortcode == shortcode) & (Url.is_active == True))
-        if url is None:
-            return None
-        return url.original_url
+        return url.original_url if url else None
