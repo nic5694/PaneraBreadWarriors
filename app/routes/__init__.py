@@ -3,11 +3,11 @@ from app.routes.urls import urls_bp
 from app.routes.events import events_bp
 
 def register_routes(app):
-    # The autograder hits /users/...
+    # This aligns your @users_bp routes with the /users endpoints
     app.register_blueprint(users_bp, url_prefix='/users')
     
-    # The autograder hits /r/... and /urls/...
+    # Keeps /r/ and /urls/ accessible at the root
     app.register_blueprint(urls_bp, url_prefix='/')
     
-    # The autograder hits /events/...
+    # Matches /events endpoints
     app.register_blueprint(events_bp, url_prefix='/events')

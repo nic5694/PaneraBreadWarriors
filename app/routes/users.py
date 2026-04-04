@@ -3,8 +3,8 @@ from flask import Blueprint, jsonify, request
 from app.services import UserService, UserConflictError
 
 ##users_bp = Blueprint("users", __name__, url_prefix="/users/v1/api/users")
-users_bp = Blueprint("users", __name__, strict_slashes=False)
-
+##users_bp = Blueprint("users", __name__, strict_slashes=False)
+users_bp = Blueprint("users", __name__)
 user_service = UserService()
 
 
