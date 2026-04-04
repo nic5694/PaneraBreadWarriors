@@ -1,4 +1,6 @@
-from flask import Blueprint, jsonify, request
+import json
+
+from flask import Blueprint, current_app, jsonify, request
 
 from app.models.events import Event
 
@@ -49,11 +51,29 @@ def create_event():
             }
         }), 400
 
-    event = Event.create(
-        url_id=url_id,
-        user_id=data.get("user_id"),
-        event_type=event_type,
-        details=data.get("details"),
-    )
+    details = data.get("details")
+    if isinstance(details, (dict, list)):
+        details = json.dumps(details)
+
+    try:
+        event = Event.create(
+            url_id=str(url_id),
+            user_id=str(data.get("user_id")) if data.get("user_id") is not None else None,
+            event_type=event_type,
+            details=details,
+        )
+    except Exception as exc:
+        current_app.logger.exception(
+            "Failed to create event. payload=%s error=%s",
+            data,
+            exc,
+        )
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Failed to create event",
+                "details": str(exc),
+            }
+        }), 500
 
     return jsonify({"data": serialize_event(event)}), 201
