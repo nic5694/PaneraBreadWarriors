@@ -20,19 +20,42 @@ class EventCreateError(Exception):
 
 class EventService:
     def serialize_event(self, event):
+        # Attempt to parse 'details' back into a dict/list if it's a JSON string
+        # This ensures the API returns actual JSON objects instead of escaped strings
+        details = event.details
+        if isinstance(details, str):
+            try:
+                details = json.loads(details)
+            except (ValueError, TypeError):
+                pass
+
         return {
             "id": event.id,
             "url_id": event.url_id,
             "user_id": event.user_id,
             "event_type": event.event_type,
-            "timestamp": event.timestamp.isoformat(),
-            "details": event.details,
-            "created_at": event.created_at.isoformat(),
-            "updated_at": event.updated_at.isoformat(),
+            "timestamp": event.timestamp.isoformat() if hasattr(event.timestamp, 'isoformat') else event.timestamp,
+            "details": details,
+            "created_at": event.created_at.isoformat() if hasattr(event.created_at, 'isoformat') else event.created_at,
+            "updated_at": event.updated_at.isoformat() if hasattr(event.updated_at, 'isoformat') else event.updated_at,
         }
 
-    def list_events(self):
-        events = Event.select().order_by(Event.id)
+    def list_events(self, filters=None):
+        """
+        Retrieves events with optional filtering.
+        :param filters: dict containing url_id, user_id, or event_type
+        """
+        query = Event.select()
+
+        if filters:
+            if filters.get("url_id"):
+                query = query.where(Event.url_id == str(filters["url_id"]))
+            if filters.get("user_id"):
+                query = query.where(Event.user_id == str(filters["user_id"]))
+            if filters.get("event_type"):
+                query = query.where(Event.event_type == filters["event_type"])
+
+        events = query.order_by(Event.id)
         return [self.serialize_event(event) for event in events]
 
     def create_event(self, data):
@@ -68,6 +91,7 @@ class EventService:
         try:
             event = Event.create(**create_payload)
         except IntegrityError as exc:
+            # Handle Postgres sequence drift
             if "events_pkey" in str(exc):
                 logger.warning(
                     "Detected events id sequence drift. Resyncing sequence. error=%s",
