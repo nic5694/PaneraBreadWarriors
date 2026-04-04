@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from app.services import UserService, UserConflictError
 
-users_bp = Blueprint("users", __name__, url_prefix="/users/v1/api/users")
+users_bp = Blueprint("users", __name__, url_prefix="/users")
 
 
 user_service = UserService()
@@ -59,7 +59,43 @@ def create_user():
     return jsonify({"data": user}), 201
 
 
-@users_bp.patch("/<int:user_id>")
+@users_bp.post("/bulk")
+def bulk_create_users():
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({
+            "error": {
+                "code": "BAD_REQUEST",
+                "message": "Request body must be valid JSON"
+            }
+        }), 400
+
+    file = data.get("file")
+    row_count = data.get("row_count")
+
+    if not file or row_count is None:
+        return jsonify({
+            "error": {
+                "code": "BAD_REQUEST",
+                "message": "Both 'file' and 'row_count' are required"
+            }
+        }), 400
+
+    try:
+        result = user_service.bulk_create_users(file, row_count)
+    except ValueError as exc:
+        return jsonify({
+            "error": {
+                "code": "BAD_REQUEST",
+                "message": str(exc)
+            }
+        }), 400
+
+    return jsonify({"data": result}), 201
+
+
+@users_bp.put("/<int:user_id>")
 def update_user(user_id):
     data = request.get_json(silent=True)
 
