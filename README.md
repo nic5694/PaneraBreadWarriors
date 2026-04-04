@@ -64,7 +64,7 @@ PaneraBreadWarriors/
 │   └── routes/
 │       └── __init__.py      # register_routes() — add blueprints here
 ├── docs/
-│   └── api.md               # API endpoint documentation
+│   └── API.md               # API endpoint documentation
 ├── helm/                    # Helm charts for deployment
 ├── seed/                    # Database seed files
 ├── tests/                   # Unit and integration tests
