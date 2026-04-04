@@ -93,6 +93,7 @@ def bulk_create_users():
     return jsonify({"data": result}), 201
 
 
+@users_bp.patch("/<int:user_id>")
 @users_bp.put("/<int:user_id>")
 def update_user(user_id):
     data = request.get_json(silent=True)
