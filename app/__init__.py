@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from flask import Flask, jsonify
 
-from app.database import init_db
+from app.database import db, init_db
 from app.routes import register_routes
 
 
