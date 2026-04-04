@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: operators
+  source:
+    repoURL: 'https://grafana.github.io/helm-charts'
+    targetRevision: 10.5.15 
+    chart: grafana
+    helm:
+      releaseName: grafana
+      values: |
+        adminPassword: "promgrafanapassword"
+        service:
+          type: ClusterIP
+        persistence:
+          enabled: false
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
