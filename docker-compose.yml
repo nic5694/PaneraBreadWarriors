@@ -8,6 +8,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       FLASK_DEBUG: "true"
       DATABASE_NAME: hackathon_db
@@ -15,6 +17,7 @@ services:
       DATABASE_PORT: "5432"
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
+      REDIS_URL: "redis://redis:6379"
     ports:
       - "8080:5000"
     volumes:
