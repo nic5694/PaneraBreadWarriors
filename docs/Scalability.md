@@ -77,40 +77,26 @@ Scalability of GitRev is built upon it's kubenetes deployment. The application i
 
 **Improvement:** 28x throughput increase (79.57 → 749.42 req/s) while maintaining P95 latency at 27ms.
 
-**Test Run Date:** -  
-**Test Duration:** -  
+**Test Run Date:** 2026-04-05 
+**Test Duration:** 5m 
 **HPA Scaling Behavior:** Scaled the API deployment up to the configured 30-replica ceiling under load.  
 **Load Balancer Configuration:** Requests were distributed across the scaled API pods.  
 **Notes:** PostgreSQL tuning and higher API capacity removed the earlier write-path pressure and let the system sustain the full 200-user run without failures.
+**Load Balancing:** The load balancer is configurted with traefik to distribute the load across all the available API pods at the cluster ingrress level, ensuring even distribution of requests and preventing any single instance from becoming a bottleneck.
 
 **Verification:**
 - CSV results file: [tier2-tune-200users.csv_stats.csv](../loadtest/results/tier2-tune-200users.csv_stats.csv)
 - Pod scaling evidence from kubernetes HPA events:
 <img src="./images/HPA_events.png">
 - Load distribution logs: 
-
+<img src="./images/pod-scaling-logs.png">
 ---
 
 ### Tier 3: Gold — The Optimization
 
-**Status:** Not Started
+**Status:** Completed
 
 **Objective:** Handle 500+ concurrent users with optimization strategies.
-
-**Execution Note:** At 500+ users, Locust can saturate a single master process and emit a CPU warning even when the API is healthy. Run Tier 3 in distributed mode or across multiple CPU cores to keep the load generator from becoming the bottleneck.
-
-Recommended command pattern:
-
-```bash
-# Master
-uv run locust -f loadtest/load_test.py --master --expect-workers 2 --headless --host=http://api.homelab --users 500 --spawn-rate 60 --run-time 5m --csv=results/tier3-500users
-
-# Worker 1
-uv run locust -f loadtest/load_test.py --worker --master-host 127.0.0.1
-
-# Worker 2
-uv run locust -f loadtest/load_test.py --worker --master-host 127.0.0.1
-```
 
 **Main Objectives:**
 - Load test with 500+ concurrent users
@@ -122,43 +108,43 @@ uv run locust -f loadtest/load_test.py --worker --master-host 127.0.0.1
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Concurrent Users | 500+ | - |
-| Success Rate | > 95% | - |
-| P95 Response Time | < 500ms | - |
-| Error Rate | < 5% | - |
-| Throughput (req/s) | - | - |
-| Total Requests | - | - |
-| Failed Requests | - | - |
-| Test with Caching | Yes | - |
+| Concurrent Users | 500+ | 500 |
+| Success Rate | > 95% | 99.996% |
+| P95 Response Time | < 500ms | 290ms |
+| Error Rate | < 5% | 0.0036% |
+| Throughput (req/s) | - | 1,116.13 |
+| Total Requests | - | 669,573 |
+| Failed Requests | - | 24 |
+| Test with Caching | Yes | Yes (Redis enabled) |
 
 **Test Run Date:** -  
 **Test Duration:** -  
-**Caching Implementation:** -  
+**Caching Implementation:** Redis cache deployed with 120s TTL on read-heavy endpoints (`GET /events`, `GET /users`, `GET /r/:shortcode`)  
 **Peak Pod Count:** -  
 **Database Connection Peak:** -  
-**Notes:** -
+**Notes:** Redis caching successfully reduced database load and allowed the system to sustain 500 concurrent users with sub-500ms P95 latency and near-zero error rate. The write endpoints (`POST /users`, `PATCH /users/:id`) showed higher latency spikes but remained well within acceptable bounds under heavy load.
 
 **Bottleneck Analysis:**
 
 Question: What was the primary bottleneck?  
-Answer: -
+Answer: Without caching, database read contention on the `/events` and `/users` endpoints would have limited throughput at 500 concurrent users.
 
 Question: How was it fixed?  
-Answer: -
+Answer: Implemented Redis caching layer to serve read-heavy endpoints from memory, reducing database CPU and connection pressure. TTL set to 120s to balance freshness and cache hit rate.
 
 Question: What performance improvements resulted?  
-Answer: -
+Answer: Throughput increased from ~750 req/s (Tier 2) to 1,116 req/s (Tier 3). P95 stayed predictable at 290ms despite 2.5x user load increase. Error rate remained below 0.01%.
 
 **Verification:**
-- CSV results file (baseline): -
-- CSV results file (with caching): -
-- Performance comparison: -
-- Caching implementation evidence: -
+
+- CSV results file: [tier3-redis-tune-500users.csv_stats.csv](../loadtest/results/tier3-redis-tune-500users.csv_stats.csv)
+- Performance comparison: Tier 2 (200 users, 749 req/s) → Tier 3 (500 users, 1,116 req/s) = 48% throughput improvement at 2.5x concurrency
+- Caching implementation evidence: cache implemented in [python](../app/services/cache.py) and enabled in [deployment](../helm/api-deployment.yaml) with environment variables. With redis [deployment](../helm/redis-deployment.yaml) and [service](../helm/redis-service.yaml) added to the cluster.
 
 
 ---
 
-#### Bottleneck analysis 
+#### Performance Improvements Log
 
 The primary bottleneck in Tier 2 was database write contention. The write-heavy endpoints `POST /users` and `PATCH /users/{id}` struggled under concurrent load due to PostgreSQL connection limits and checkpoint I/O pressure.
 
