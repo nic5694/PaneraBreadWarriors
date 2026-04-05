@@ -13,7 +13,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0
-      maxSurge: 1
+      maxSurge: 2
   template:
     metadata:
       labels:
@@ -36,7 +36,7 @@ spec:
         - name: DATABASE_PASSWORD
           value: postgres
         - name: DATABASE_MAX_CONNECTIONS
-          value: "10"
+          value: "40"
         - name: DATABASE_STALE_TIMEOUT
           value: "300"
         - name: DATABASE_TIMEOUT
@@ -48,11 +48,11 @@ spec:
           protocol: TCP
         resources:
           requests:
-            cpu: "250m"
-            memory: "256Mi"
+            cpu: "500m"
+            memory: "512Mi"
           limits:
-            cpu: "1000m"
-            memory: "1Gi"
+            cpu: "2000m"
+            memory: "2Gi"
         startupProbe:
           httpGet:
             path: /ready
