@@ -106,12 +106,13 @@ PaneraBreadWarriors/
 # API Docs
 See `Docs/API.md` for full endpoint documentation.
 
-# Contributors
+# Team
 - Nic Martoccia
 - Han Lee
 - Luciano Scarpaci
-
+- Dylan Brassard
 # screenshots
-
+![Screenshot 1](screenshots/pipeline.png)
+![Screenshot 2](screenshots/unittest.png)
 # Demo
 
