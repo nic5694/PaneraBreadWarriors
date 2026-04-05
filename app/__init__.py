@@ -3,10 +3,9 @@ from flask import Flask, jsonify
 
 from app.database import db, init_db
 from app.routes import register_routes
-from seed import seed_database
 
 
-def create_app(seed_data=True):
+def create_app(seed_data=None):
     load_dotenv()
 
     app = Flask(__name__)
@@ -22,8 +21,6 @@ def create_app(seed_data=True):
     # 3. CREATE TABLES HERE 👇
     with db.connection_context():
         db.create_tables([User, Url, Event], safe=True)
-        if seed_data:
-            seed_database()
 
     # 4. Register routes
     register_routes(app)
