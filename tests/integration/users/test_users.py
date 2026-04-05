@@ -69,7 +69,7 @@ def test_create_user_sequence_drift_returns_409_with_specific_message(client):
 
 
 @pytest.mark.integration
-def test_create_user_missing_password_is_accepted_on_legacy_users_path(client):
+def test_create_user_missing_password_is_accepted_on_users_path(client):
     response = client.post(
         "/users",
         json={"name": "Alice", "email": "alice@example.com"},

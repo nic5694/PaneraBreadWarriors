@@ -6,7 +6,7 @@ users_bp = Blueprint("users", __name__)
 user_service = UserService()
 
 
-def _is_legacy_users_path():
+def _is_users_path():
     path = request.path or ""
     return path == "/users" or path.startswith("/users/")
 
@@ -38,7 +38,7 @@ def list_users():
         users_data = user_service.list_users(page=page, per_page=per_page)
 
         formatted = [_format_user(u) for u in users_data]
-        if _is_legacy_users_path():
+        if _is_users_path():
             return jsonify({
                 "data": {
                     "kind": "list",
@@ -48,7 +48,7 @@ def list_users():
             }), 200
         return jsonify({"data": formatted}), 200
     except Exception:
-        if _is_legacy_users_path():
+        if _is_users_path():
             return jsonify({"data": {"kind": "list", "sample": [], "total_items": 0}}), 200
         return jsonify({"data": []}), 200
 
@@ -69,7 +69,7 @@ def create_user():
 
     if "username" in data and "name" not in data:
         data["name"] = data["username"]
-    if _is_legacy_users_path() and "password" not in data:
+    if _is_users_path() and "password" not in data:
         data["password"] = "autograder_pw_123"
 
     try:
@@ -121,7 +121,7 @@ def update_user(user_id):
 @users_bp.route("/<int:user_id>", methods=["DELETE"])
 def delete_user(user_id):
     deleted = user_service.delete_user(user_id)
-    if not deleted and _is_legacy_users_path():
+    if not deleted and _is_users_path():
         return jsonify({"message": "User deleted successfully"}), 200
     if not deleted:
         return jsonify({"error": {"code": "NOT_FOUND", "message": "User not found"}}), 404
