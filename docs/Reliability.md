@@ -39,6 +39,7 @@ Reliability of GitRev is built on preventative testing, deployment guardrails, a
 - CI workflow reference: [python_ci.yml](../.github/workflows/python_ci.yml)
 - Pipeline screenshot evidence: [pipeline](../screenshots/pipeline.png)
 - Health endpoint behavior verified in integration testing (`GET /health` returns HTTP 200)
+<img src="./images/healthcheck endpoint.png" alt="Health Check Endpoint" />
 
 ---
 
@@ -73,9 +74,14 @@ Reliability of GitRev is built on preventative testing, deployment guardrails, a
 **Verification:**
 
 - Coverage report showing >= 50%
+<img src="./images/pytest-code-coverage.png">
 - Integration test evidence
+- 
 - Screenshot of blocked deploy due to failing tests
+[](./images/test_failing_failed_deployment.png)
+<img src="./images/test_failing_failed_deployment.png">
 - Latest measured result: 80% coverage, 53 tests passed
+- 
 
 ---
 
