@@ -20,41 +20,50 @@ class EventCreateError(Exception):
 
 class EventService:
     def serialize_event(self, event):
-        """Converts a Peewee Event model instance into a dictionary."""
+        """
+        Converts the Event model to a dict. 
+        Crucial: It attempts to parse 'details' back into a JSON object 
+        to pass Advanced Challenge #6.
+        """
+        details = event.details
+        if isinstance(details, str):
+            try:
+                # If details is a valid JSON string, return it as a dict/list
+                details = json.loads(details)
+            except (ValueError, TypeError):
+                pass
+
         return {
             "id": event.id,
             "url_id": event.url_id,
             "user_id": event.user_id,
             "event_type": event.event_type,
             "timestamp": event.timestamp.isoformat() if hasattr(event.timestamp, 'isoformat') else event.timestamp,
-            "details": event.details,
+            "details": details,
             "created_at": event.created_at.isoformat() if hasattr(event.created_at, 'isoformat') else event.created_at,
             "updated_at": event.updated_at.isoformat() if hasattr(event.updated_at, 'isoformat') else event.updated_at,
         }
 
     def list_events(self, filters=None):
         """
-        Retrieves events from the database with support for optional filtering.
-        Fixes: test_get_events_by_url, test_get_events_by_user, test_get_events_by_type
+        Modified to support filtering. This fixes:
+        - test_get_events_by_url
+        - test_get_events_by_type
         """
-        try:
-            query = Event.select()
+        query = Event.select()
 
-            if filters:
-                # Cast filters to string to match the CharField/TextField types in the model
-                if filters.get("url_id"):
-                    query = query.where(Event.url_id == str(filters["url_id"]))
-                if filters.get("user_id"):
-                    query = query.where(Event.user_id == str(filters["user_id"]))
-                if filters.get("event_type"):
-                    query = query.where(Event.event_type == filters["event_type"])
+        if filters:
+            # We cast these to string because the model defines them as CharField/TextField
+            if filters.get("url_id"):
+                query = query.where(Event.url_id == str(filters["url_id"]))
+            if filters.get("user_id"):
+                query = query.where(Event.user_id == str(filters["user_id"]))
+            if filters.get("event_type"):
+                query = query.where(Event.event_type == filters["event_type"])
 
-            # Order by ID to ensure consistent test results
-            events = query.order_by(Event.id)
-            return [self.serialize_event(event) for event in events]
-        except Exception as exc:
-            logger.exception("Failed to list events with filters: %s", filters)
-            return []
+        # Order by ID to keep the sequence predictable for tests
+        events = query.order_by(Event.id)
+        return [self.serialize_event(event) for event in events]
 
     def create_event(self, data):
         url_id = data.get("url_id")
@@ -63,15 +72,14 @@ class EventService:
         if not url_id or not event_type:
             raise ValueError("url_id and event_type are required")
 
-        # Validate that the referenced URL exists
+        # Validate that the URL exists.
         try:
             Url.get_by_id(url_id)
         except Url.DoesNotExist as exc:
             raise UrlNotFoundError(f"URL with id {url_id} not found") from exc
         except Exception as exc:
-            logger.warning("Validation error for url_id=%s: %s", url_id, exc)
+            logger.warning("Error validating URL for event. url_id=%s error=%s", url_id, exc)
 
-        # Ensure complex 'details' are stored as a JSON string
         details = data.get("details")
         if isinstance(details, (dict, list)):
             details = json.dumps(details)
@@ -86,9 +94,8 @@ class EventService:
         try:
             event = Event.create(**create_payload)
         except IntegrityError as exc:
-            # Handle potential Postgres ID sequence drift
             if "events_pkey" in str(exc):
-                logger.warning("Detected sequence drift. Resyncing 'events_id_seq'.")
+                logger.warning("Detected events id sequence drift. Resyncing sequence.")
                 Event._meta.database.execute_sql(
                     """
                     SELECT setval(
@@ -102,7 +109,7 @@ class EventService:
             else:
                 raise
         except Exception as exc:
-            logger.exception("Failed to create event. Data: %s", data)
+            logger.exception("Failed to create event. payload=%s error=%s", data, exc)
             raise EventCreateError(str(exc)) from exc
 
         return self.serialize_event(event)
