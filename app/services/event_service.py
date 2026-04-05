@@ -22,16 +22,11 @@ class EventService:
     def serialize_event(self, event):
         """
         Converts the Event model to a dict. 
-        Crucial: It attempts to parse 'details' back into a JSON object 
-        to pass Advanced Challenge #6.
+        Details remain as JSON strings so they can be parsed by the client.
         """
         details = event.details
-        if isinstance(details, str):
-            try:
-                # If details is a valid JSON string, return it as a dict/list
-                details = json.loads(details)
-            except (ValueError, TypeError):
-                pass
+        # Keep details as a JSON string (don't parse it back to dict)
+        # This allows the client to call json.loads() on it if needed
 
         return {
             "id": event.id,
