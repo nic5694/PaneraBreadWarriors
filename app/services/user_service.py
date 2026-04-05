@@ -52,7 +52,7 @@ class UserService:
         Updated to handle pagination. Fixes test_get_users_pagination.
         """
         # .paginate(page_number, items_per_page) is built into Peewee
-        users = User.select().where(User.is_active == True).order_by(User.id).paginate(page, per_page)
+        users = User.select().where(User.is_active).order_by(User.id).paginate(page, per_page)
         return [self.serialize_user(user) for user in users]
 
     def bulk_create_users(self, file_name, row_count):
@@ -92,7 +92,7 @@ class UserService:
             raise ValueError(f"CSV Error: {str(e)}")
 
     def get_user(self, user_id):
-        user = User.get_or_none((User.id == user_id) & (User.is_active == True))
+        user = User.get_or_none((User.id == user_id) & (User.is_active))
         if user is None:
             return None
         return self.serialize_user(user)
@@ -117,7 +117,7 @@ class UserService:
         return self.serialize_user(user)
 
     def update_user(self, user_id, data):
-        user = User.get_or_none((User.id == user_id) & (User.is_active == True))
+        user = User.get_or_none((User.id == user_id) & (User.is_active))
         if user is None:
             return None
 
@@ -141,7 +141,7 @@ class UserService:
         return self.serialize_user(user)
 
     def delete_user(self, user_id):
-        user = User.get_or_none((User.id == user_id) & (User.is_active == True))
+        user = User.get_or_none((User.id == user_id) & (User.is_active))
         if user is None:
             return False
 

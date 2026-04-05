@@ -11,7 +11,16 @@ event_service = EventService()
 @events_bp.get("")
 @events_bp.get("/")
 def list_events():
-    return jsonify({"data": event_service.list_events()}), 200
+    try:
+        events = event_service.list_events()
+        return jsonify({"data": events}), 200
+    except Exception as exc:
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Failed to retrieve events"
+            }
+        }), 500
 
 
 @events_bp.post("")

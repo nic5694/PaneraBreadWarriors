@@ -87,10 +87,17 @@ class UrlService:
         query = Url.select()
         if user_id:
             query = query.where(Url.user_id == user_id)
-        if is_active is not None:
+        
+        # Default to only active URLs unless explicitly set
+        if is_active is None:
+            query = query.where(Url.is_active)
+        else:
             # Handle both boolean and string "true"/"false"
             status = str(is_active).lower() == 'true' if isinstance(is_active, str) else bool(is_active)
-            query = query.where(Url.is_active == status)
+            if status:
+                query = query.where(Url.is_active)
+            else:
+                query = query.where(~Url.is_active)
         
         return [self.serialize_url(u) for u in query]
 
@@ -119,5 +126,5 @@ class UrlService:
         return False
 
     def resolve_shortcode(self, shortcode):
-        url = Url.get_or_none((Url.shortcode == shortcode) & (Url.is_active == True))
+        url = Url.get_or_none((Url.shortcode == shortcode) & (Url.is_active))
         return url.original_url if url else None

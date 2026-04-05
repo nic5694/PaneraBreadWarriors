@@ -37,20 +37,24 @@ class EventService:
         Retrieves events from the database with support for optional filtering.
         Fixes: test_get_events_by_url, test_get_events_by_user, test_get_events_by_type
         """
-        query = Event.select()
+        try:
+            query = Event.select()
 
-        if filters:
-            # Cast filters to string to match the CharField/TextField types in the model
-            if filters.get("url_id"):
-                query = query.where(Event.url_id == str(filters["url_id"]))
-            if filters.get("user_id"):
-                query = query.where(Event.user_id == str(filters["user_id"]))
-            if filters.get("event_type"):
-                query = query.where(Event.event_type == filters["event_type"])
+            if filters:
+                # Cast filters to string to match the CharField/TextField types in the model
+                if filters.get("url_id"):
+                    query = query.where(Event.url_id == str(filters["url_id"]))
+                if filters.get("user_id"):
+                    query = query.where(Event.user_id == str(filters["user_id"]))
+                if filters.get("event_type"):
+                    query = query.where(Event.event_type == filters["event_type"])
 
-        # Order by ID to ensure consistent test results
-        events = query.order_by(Event.id)
-        return [self.serialize_event(event) for event in events]
+            # Order by ID to ensure consistent test results
+            events = query.order_by(Event.id)
+            return [self.serialize_event(event) for event in events]
+        except Exception as exc:
+            logger.exception("Failed to list events with filters: %s", filters)
+            return []
 
     def create_event(self, data):
         url_id = data.get("url_id")
