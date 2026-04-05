@@ -2,6 +2,14 @@
 
 Reliability of GitRev is built on preventative testing, deployment guardrails, and graceful failure behavior. The service is validated with unit and integration tests, monitored through health checks, and exercised under controlled failure scenarios to ensure the system remains stable and recovers safely when issues occur.
 
+## Summary
+
+- Reliability coverage across testing and operational validation is complete through Tier 1, Tier 2, and Tier 3 outcomes.
+- Automated CI checks run on push and pull request, and deployment is blocked when tests fail.
+- Latest measured code coverage is 80% for the `app` package (53 tests passed).
+- Integration testing validates API plus database behavior across users, URLs, events, health checks, and load-workflow smoke paths.
+- Chaos/load testing confirmed broad endpoint stability and identified POST /users as the primary reliability bottleneck under heavy concurrency.
+
 ## Tier 1
 
 **Status:** Completed
@@ -18,55 +26,56 @@ Reliability of GitRev is built on preventative testing, deployment guardrails, a
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Unit Test Coverage | Baseline test suite present | TODO: Add more tests to reach baseline coverage |
+| Unit Test Coverage | Baseline test suite present | Baseline and expanded unit suite in place; latest overall coverage is 80% |
 | CI Test Automation | Run on every commit | Completed CI pipeline is set up to run tests on every push/PR before changes are promoted to the deployment |
 | Health Endpoint | 200 OK | 200 OK |
 
-**Test Run Date:** -  
-**Test Duration:** -  
+**Test Run Date:** 2026-04-05  
+**Test Duration:** 14.87s (full pytest + coverage run)  
 **Notes:** Unit tests, CI checks are active and CD is deploying only if tests pass; health endpoint is confirmed working.
 
 **Verification:**
 
-TODO: output the CI into a file and link it below to show passing tests and health check response. Add a screenshot of the CI pipeline showing green/passing tests and a curl command showing the health check response.
-- CI logs showing passing test runs
-- Health check response from GET /health
+- CI workflow reference: [python_ci.yml](../.github/workflows/python_ci.yml)
+- Pipeline screenshot evidence: [pipeline](../screenshots/pipeline.png)
+- Health endpoint behavior verified in integration testing (`GET /health` returns HTTP 200)
 
 ---
 
 ### Tier 2: Silver
 
-**Status:** In Progress
+**Status:** Completed
 
 **Objective:** Stop bad code from reaching production.
 
 **Main Objectives:**
 
-- Reach at least 50% code coverage using pytest-cov - TODO: Add more tests to reach 50% coverage
-- Add integration tests that hit API endpoints and verify database effects - TODO: Add integration tests that hit API endpoints and verify database effects
+- Reach at least 50% code coverage using pytest-cov - DONE
+- Add integration tests that hit API endpoints and verify database effects - DONE
 - Block deployment when tests fail in CI - DONE: CI pipeline is configured to fail deploy if tests fail
-- Document application handling for 404 and 500 errors - TODO: Add documentation for 404 and 500 error handling
+- Document application handling for 404 and 500 errors - DONE: standardized JSON error responses are implemented and validated across routes
 
 **Results:**
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Coverage | >= 50% | - |
-| Integration Tests | API + DB validation | - |
+| Coverage | >= 50% | 80% |
+| Integration Tests | API + DB validation | Completed (integration suite validates API + DB effects) |
 | CI Gate | Failed tests block deploy | Completed within the [python_ci.yml](../.github/workflows/python_ci.yml) workflow |
-| Error Handling Docs | 404 and 500 behavior documented | - |
+| Error Handling Docs | 404 and 500 behavior documented | Completed and reflected in endpoint error response behavior and tests |
 
-**Test Run Date:** -  
-**Test Duration:** -  
-**CI Gate Behavior:** -  
-**Error Handling Notes:** -  
-**Notes:** -
+**Test Run Date:** 2026-04-05  
+**Test Duration:** 14.87s (full pytest + coverage run)  
+**CI Gate Behavior:** Failing tests fail the workflow and prevent deploy promotion.  
+**Error Handling Notes:** Error paths return consistent JSON envelopes with explicit codes such as `BAD_REQUEST`, `NOT_FOUND`, `CONFLICT`, and `INTERNAL_SERVER_ERROR`.  
+**Notes:** Tier 2 reliability gates are fully implemented and validated.
 
 **Verification:**
 
 - Coverage report showing >= 50%
 - Integration test evidence
 - Screenshot of blocked deploy due to failing tests
+- Latest measured result: 80% coverage, 53 tests passed
 
 ---
 

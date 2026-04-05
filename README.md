@@ -1,6 +1,29 @@
 # GitRev
 
-A resilient backend service that stays running.
+A production-oriented backend that stays predictable under load, recovers cleanly from failure, and is easy to validate before deployment.
+
+## Project Story
+
+### Inspiration
+We kept running into the same production problems that break real services: schema drift, bad seed data, brittle deployments, and load tests that exposed weak points only after the system was already under pressure. GitRev was built to practice production engineering, not just ship endpoints.
+
+### What it does
+GitRev provides a small but complete API surface for users, short URLs, and events, plus health checks, redirects, seeded data, and the operational guardrails needed to keep the service observable and recoverable.
+
+### How we built it
+We used Flask and Peewee on PostgreSQL, wrapped the app in Docker, deployed with Helm, and validated behavior with unit, integration, and load tests. We also added deterministic seeding, sequence recovery, and test fixtures so the application can be reset and exercised repeatably in both local and cluster environments.
+
+### Challenges we ran into
+The hard parts were operational, not just functional. We had to fix sequence drift, make seed data happen only in the right environments, make integration tests work against a realistic database state, and handle Locust runs that hit DNS and CPU limits before the API itself failed. Load testing also exposed that POST /users was the primary bottleneck under heavy concurrency.
+
+### Accomplishments we’re proud of
+We shipped a backend that stays up through seeded baselines, integration coverage, and load-test validation. The project now has a real reliability story: health checks pass, redirects work, events stay responsive, and the system keeps serving traffic even when one path becomes the bottleneck.
+
+### What we learned
+Production reliability is rarely about one big bug. It is usually about many small things working together: correct hostnames, predictable seed data, stable database sequences, connection limits, and tests that reflect real operational behavior.
+
+### What’s next for GitRev
+Better observability, distributed Locust runs for higher load, caching for the hottest read paths, and stronger failover behavior so the system can surface problems earlier instead of simply surviving them later.
 
 **Tech Stack:** ![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white) ![Peewee ORM](https://img.shields.io/badge/Peewee_ORM-3776AB?style=for-the-badge&logo=python&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white) ![uv](https://img.shields.io/badge/uv-DE5FE9?style=for-the-badge&logo=uv&logoColor=white) ![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white) ![Proxmox](https://img.shields.io/badge/Proxmox-E57000?style=for-the-badge&logo=proxmox&logoColor=white)
 
@@ -50,34 +73,21 @@ git clone <repo-url> && cd mlh-pe-hackathon
 # 2. Install dependencies
 uv sync
 
-# 3. Create the database
-createdb hackathon_db
-
-# 4. Configure environment
-cp .env.example .env   # edit if your DB credentials differ
-
-# 5. Run the server
-uv run run.py
+# 4. Run the docker compose setup to startup the reddis, database and API
+docker-compose up --build
 
 # 6. Verify
 curl http://localhost:5000/health
 # → {"status":"ok"}
 ```
 
-## Reset For Load Tests
+## Reset For Load Tests 
 
-Use this before a stress run if you want to clear persisted rows and reseed the cluster database with a Kubernetes Job:
+We have had issues when running load tests that the database gets into a bad state after a run, with sequence drift and bad seed data. To fix this, we have a Kubernetes Job that can be run to clear persisted rows and reseed the cluster database before a stress run. The Job is suspended by default so it won't run accidentally, but you can resume it with the following command:
 
 ```bash
 kubectl apply -f helm/reset-load-test-job.yaml
 kubectl wait --for=condition=complete job/reset-load-test-data --timeout=120s
-```
-
-If you want to rerun the job, delete the previous one first:
-
-```bash
-kubectl delete job reset-load-test-data --ignore-not-found
-kubectl apply -f helm/reset-load-test-job.yaml
 ```
 
 ## Project Structure
@@ -105,6 +115,28 @@ PaneraBreadWarriors/
 
 # API Docs
 See `Docs/API.md` for full endpoint documentation.
+
+## Quest Log of Our Progress
+
+This document serves as a comprehensive log of our journey through the Reliability and Scalability quests. It provides an overview of the objectives, results, and verification for each tier of both quests, along with links to detailed documentation for each.
+
+## Reliability Quest
+
+Overview of the reliability achieved and link to the deep dive of all the 3 tiers implemented:
+
+[reliability](./docs/Reliability.md)
+
+## Scalability Quest
+
+Overview of the Scalability achieved and link to the deep dive of all the 3 tiers implemented:
+
+[scalability](./docs/Scalability.md)
+
+## Incident Response Quest
+
+Overview of the Incident Response achieved and link to the deep dive of all the 3 tiers implemented:
+
+[incident response](./docs/IncidentResponse.md)
 
 # Team
 - Nic Martoccia
