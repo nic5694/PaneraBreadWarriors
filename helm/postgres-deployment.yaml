@@ -20,7 +20,35 @@ spec:
         imagePullPolicy: IfNotPresent
         args:
         - -c
-        - max_connections=500
+        - max_connections=200
+        - -c
+        - shared_buffers=512MB
+        - -c
+        - effective_cache_size=1536MB
+        - -c
+        - work_mem=8MB
+        - -c
+        - maintenance_work_mem=256MB
+        - -c
+        - wal_buffers=16MB
+        - -c
+        - checkpoint_timeout=15min
+        - -c
+        - checkpoint_completion_target=0.9
+        - -c
+        - max_wal_size=2GB
+        - -c
+        - min_wal_size=512MB
+        - -c
+        - wal_compression=on
+        - -c
+        - synchronous_commit=off
+        - -c
+        - autovacuum_naptime=10s
+        - -c
+        - autovacuum_vacuum_scale_factor=0.05
+        - -c
+        - autovacuum_analyze_scale_factor=0.02
         ports:
         - containerPort: 5432
           protocol: TCP
@@ -33,11 +61,11 @@ spec:
           value: postgres
         resources:
           requests:
-            cpu: "500m"
-            memory: "1Gi"
-          limits:
-            cpu: "2000m"
+            cpu: "1000m"
             memory: "2Gi"
+          limits:
+            cpu: "3000m"
+            memory: "4Gi"
         readinessProbe:
           exec:
             command:

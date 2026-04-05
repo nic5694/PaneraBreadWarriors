@@ -174,8 +174,11 @@ Overview of the Incident Response achieved and link to the deep dive of all the 
 - Han Lee
 - Luciano Scarpaci
 - Dylan Brassard
+
 # screenshots
 ![Screenshot 1](screenshots/pipeline.png)
-![Screenshot 2](screenshots/unittest.png)
+![Screenshot 2](screenshots/server.png)
+![Screenshot 3](screenshots/totalrequests.png)
+
 # Demo
 https://youtu.be/ryN-CXHXBS8
