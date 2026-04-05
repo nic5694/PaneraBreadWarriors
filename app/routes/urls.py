@@ -4,7 +4,8 @@ from app.services import UrlService, UrlConflictError
 urls_bp = Blueprint("urls", __name__)
 url_service = UrlService()
 
-@urls_bp.route("/urls/v1/api/urls/", methods=["POST"])
+@urls_bp.route("", methods=["POST"])
+@urls_bp.route("/", methods=["POST"])
 def create_url():
     data = request.get_json(silent=True) or {}
     try:
@@ -25,7 +26,8 @@ def create_url():
             }
         }), 409
 
-@urls_bp.route("/urls/v1/api/urls/", methods=["GET"])
+@urls_bp.route("", methods=["GET"])
+@urls_bp.route("/", methods=["GET"])
 def list_urls():
     # Handle both JSON body or Query Params for user_id
     user_id = request.args.get("user_id") or request.get_json(silent=True, default={}).get("user_id")
@@ -34,7 +36,7 @@ def list_urls():
     urls = url_service.list_urls(user_id=user_id, is_active=is_active)
     return jsonify({"data": urls}), 200
 
-@urls_bp.route("/urls/v1/api/urls/<int:url_id>", methods=["GET", "PUT", "DELETE"])
+@urls_bp.route("/<int:url_id>", methods=["GET", "PUT", "DELETE"])
 def url_operations(url_id):
     if request.method == "GET":
         url = url_service.get_url_by_id(url_id)
@@ -54,7 +56,7 @@ def url_operations(url_id):
         return "", 204
 
 
-@urls_bp.route("/r/<string:shortcode>", methods=["GET"])
+@urls_bp.route("/<string:shortcode>", methods=["GET"])
 def resolve_shortcode(shortcode):
     original_url = url_service.resolve_shortcode(shortcode)
     if not original_url:
