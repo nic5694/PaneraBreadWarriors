@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: operators
+  source:
+    repoURL: 'https://prometheus-community.github.io/helm-charts'
+    targetRevision: 28.16.0  # Replace with the latest version as needed
+    chart: kube-prometheus-stack
+    helm:
+      releaseName: prometheus
+      # You can override default chart values here
+      values: |
+        grafana:
+          enabled: true
+          adminPassword: "promgrafanapassword"
+        prometheus:
+          prometheusSpec:
+            retention: 15d
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -2,17 +2,19 @@ from flask import Blueprint, jsonify, request
 
 from app.services import EventService, UrlNotFoundError, EventCreateError
 
-events_bp = Blueprint("events", __name__, url_prefix="/events/v1/api/events")
+events_bp = Blueprint("events", __name__)
 
 
 event_service = EventService()
 
 
+@events_bp.get("")
 @events_bp.get("/")
 def list_events():
     return jsonify({"data": event_service.list_events()}), 200
 
 
+@events_bp.post("")
 @events_bp.post("/")
 def create_event():
     data = request.get_json(silent=True)

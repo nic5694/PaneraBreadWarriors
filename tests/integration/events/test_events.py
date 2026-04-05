@@ -7,7 +7,7 @@ from app.database import db
 def _create_url(client, shortcode=None, original_url=None):
     # 1. Create a fresh user first to avoid User-related conflicts
     user_email = f"test-{uuid.uuid4().hex[:6]}@gatech.edu"
-    user_res = client.post("/users/v1/api/users/", json={
+    user_res = client.post("/users", json={
         "name": "Test User",
         "email": user_email,
         "password": "testpassword123"
@@ -21,7 +21,7 @@ def _create_url(client, shortcode=None, original_url=None):
         original_url = f"https://example.com/{uuid.uuid4().hex[:6]}"
 
     response = client.post(
-        "/urls/v1/api/urls/",
+        "/urls",
         json={
             "user_id": str(user_id), # Use the fresh user
             "shortcode": shortcode,
@@ -41,7 +41,7 @@ def test_create_event_returns_201_and_payload(client):
     url_id = _create_url(client)
 
     response = client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={
             "url_id": url_id,
             "event_type": "click",
@@ -59,7 +59,7 @@ def test_create_event_returns_201_and_payload(client):
 @pytest.mark.integration
 def test_create_event_missing_required_fields_returns_400(client):
     response = client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": 1},
     )
 
@@ -73,7 +73,7 @@ def test_create_event_missing_required_fields_returns_400(client):
 @pytest.mark.integration
 def test_create_event_returns_404_when_url_does_not_exist(client):
     response = client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": 9999, "event_type": "click"},
     )
 
@@ -93,15 +93,15 @@ def test_list_events_returns_created_events(client):
     type_2 = f"view-{uuid.uuid4().hex[:4]}"
 
     client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": url_id, "event_type": type_1},
     )
     client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": url_id, "event_type": type_2},
     )
 
-    response = client.get("/events/v1/api/events/")
+    response = client.get("/events")
 
     assert response.status_code == 200
     data = response.get_json()["data"]
@@ -118,11 +118,11 @@ def test_create_event_recovers_from_sequence_drift(client):
     url_id = _create_url(client)
 
     client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": url_id, "event_type": "click"},
     )
     client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": url_id, "event_type": "view"},
     )
 
@@ -133,7 +133,7 @@ def test_create_event_recovers_from_sequence_drift(client):
             )
 
     response = client.post(
-        "/events/v1/api/events/",
+        "/events",
         json={"url_id": url_id, "event_type": "redirect"},
     )
 

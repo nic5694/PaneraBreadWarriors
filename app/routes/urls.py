@@ -1,27 +1,16 @@
 from flask import Blueprint, jsonify, request, redirect
-
 from app.services import UrlService, UrlConflictError
 
 urls_bp = Blueprint("urls", __name__)
-
-
 url_service = UrlService()
 
-
-@urls_bp.post("/urls/v1/api/urls/")
+@urls_bp.route("", methods=["POST"])
+@urls_bp.route("/", methods=["POST"])
 def create_url():
-    data = request.get_json(silent=True)
-
-    if not data:
-        return jsonify({
-            "error": {
-                "code": "BAD_REQUEST",
-                "message": "Request body must be valid JSON"
-            }
-        }), 400
-
+    data = request.get_json(silent=True) or {}
     try:
         url = url_service.create_url(data)
+        return jsonify({"data": url}), 201
     except ValueError as exc:
         return jsonify({
             "error": {
@@ -37,18 +26,39 @@ def create_url():
             }
         }), 409
 
-    return jsonify({"data": url}), 201
+@urls_bp.route("", methods=["GET"])
+@urls_bp.route("/", methods=["GET"])
+def list_urls():
+    # Handle both JSON body or Query Params for user_id
+    user_id = request.args.get("user_id") or request.get_json(silent=True, default={}).get("user_id")
+    is_active = request.args.get("is_active")
+    
+    urls = url_service.list_urls(user_id=user_id, is_active=is_active)
+    return jsonify({"data": urls}), 200
+
+@urls_bp.route("/<int:url_id>", methods=["GET", "PUT", "DELETE"])
+def url_operations(url_id):
+    if request.method == "GET":
+        url = url_service.get_url_by_id(url_id)
+        if not url:
+            return jsonify({"error": {"code": "NOT_FOUND", "message": "URL not found"}}), 404
+        return jsonify({"data": url}), 200
+
+    if request.method == "PUT":
+        data = request.get_json(silent=True) or {}
+        url = url_service.update_url(url_id, data)
+        if not url:
+            return jsonify({"error": {"code": "NOT_FOUND", "message": "URL not found"}}), 404
+        return jsonify({"data": url}), 200
+
+    if request.method == "DELETE":
+        url_service.delete_url(url_id)
+        return "", 204
 
 
-@urls_bp.get("/r/<string:shortcode>")
+@urls_bp.route("/<string:shortcode>", methods=["GET"])
 def resolve_shortcode(shortcode):
-    target_url = url_service.resolve_shortcode(shortcode)
-    if target_url is None:
-        return jsonify({
-            "error": {
-                "code": "NOT_FOUND",
-                "message": "Short URL not found"
-            }
-        }), 404
-
-    return redirect(target_url, code=302)
+    original_url = url_service.resolve_shortcode(shortcode)
+    if not original_url:
+        return jsonify({"error": {"code": "NOT_FOUND", "message": "Shortcode not found"}}), 404
+    return redirect(original_url, code=302)

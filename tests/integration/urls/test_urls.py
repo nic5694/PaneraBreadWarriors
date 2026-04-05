@@ -4,7 +4,7 @@ from app.database import db
 
 def _ensure_user_exists(client):
     email = "test_url_user@gatech.edu"
-    res = client.post("/users/v1/api/users/", json={
+    res = client.post("/users", json={
         "name": "URL Tester",
         "email": email,
         "password": "password123"
@@ -24,7 +24,7 @@ def test_create_url_returns_201_and_payload(client):
         "original_url": f"https://example.com/{unique_code}",
         "title": "Example",
     }
-    response = client.post("/urls/v1/api/urls/", json=payload)
+    response = client.post("/urls", json=payload)
     assert response.status_code == 201
 
 @pytest.mark.integration
@@ -36,8 +36,8 @@ def test_create_url_duplicate_shortcode_returns_409(client):
         "shortcode": unique_code,
         "original_url": "https://example.com/a",
     }
-    client.post("/urls/v1/api/urls/", json=payload)
-    response = client.post("/urls/v1/api/urls/", json=payload)
+    client.post("/urls", json=payload)
+    response = client.post("/urls", json=payload)
 
     assert response.status_code == 409
     # Updated to match your actual specific error message
@@ -52,7 +52,7 @@ def test_create_url_sequence_drift_recovers_successfully(client):
     user_id = _ensure_user_exists(client)
     c1, c2 = [f"drift-{uuid.uuid4().hex[:5]}" for _ in range(2)]
     
-    client.post("/urls/v1/api/urls/", json={"user_id": user_id, "shortcode": c1, "original_url": "https://ex.com/1"})
+    client.post("/urls", json={"user_id": user_id, "shortcode": c1, "original_url": "https://ex.com/1"})
     
     with client.application.app_context():
         with db.connection_context():
@@ -61,7 +61,7 @@ def test_create_url_sequence_drift_recovers_successfully(client):
 
     # This should trigger the auto-recovery in UrlService and return 201
     response = client.post(
-        "/urls/v1/api/urls/",
+        "/urls",
         json={"user_id": user_id, "shortcode": c2, "original_url": "https://ex.com/2"},
     )
 
@@ -73,9 +73,9 @@ def test_resolve_shortcode_redirects_returns_302(client):
     user_id = _ensure_user_exists(client)
     unique_code = f"go-{uuid.uuid4().hex[:6]}"
     client.post(
-        "/urls/v1/api/urls/",
+        "/urls",
         json={"user_id": user_id, "shortcode": unique_code, "original_url": "https://example.com/go"},
     )
-    response = client.get(f"/r/{unique_code}", follow_redirects=False)
+    response = client.get(f"/urls/{unique_code}", follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["Location"] == "https://example.com/go"

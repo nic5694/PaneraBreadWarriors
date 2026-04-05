@@ -4,6 +4,6 @@ from app.routes.events import events_bp
 
 
 def register_routes(app):
-    app.register_blueprint(users_bp)
-    app.register_blueprint(urls_bp)
-    app.register_blueprint(events_bp)
+    app.register_blueprint(users_bp, url_prefix='/users')
+    app.register_blueprint(urls_bp, url_prefix='/urls')
+    app.register_blueprint(events_bp, url_prefix='/events')
