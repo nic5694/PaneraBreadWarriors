@@ -113,8 +113,23 @@ PaneraBreadWarriors/
 └── README.md
 ```
 
-# API Docs
-See `Docs/API.md` for full endpoint documentation.
+# Docs
+- `Docs/API.md` All endpoint documentation.
+  HTTP Methods on Health, Users, Urls, and Events.
+   
+- `Docs/Reliability.md` Track Documentation.
+  Reliability testing on integration and unit tests.
+  Milestones (Bronze, Silver, or Gold Tiers)
+  Completed Gold Tier
+
+- `Docs/Scalability.md` Track Documentation.
+  Scalability Testing to ensure that the application is scaling.
+  Milestones (Bronze, Silver, or Gold Tiers)
+  Completed Bronze Tier
+
+- `Docs/IncidentResponse.md` Track Documentation.
+  Failure testing documentation so that when server goes down, incidents can be resolved.
+  Milestones (Bronze, Silver, or Gold Tiers)
 
 ## Quest Log of Our Progress
 
