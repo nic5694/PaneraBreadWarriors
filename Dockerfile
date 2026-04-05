@@ -12,8 +12,8 @@ RUN uv sync --no-dev
 # Flask app port
 EXPOSE 5000
 
-# Helpful default for local Docker runs
-ENV FLASK_DEBUG=true
+# Default to non-debug mode in containers
+ENV FLASK_DEBUG=false
 
-# Run the root-level run.py Flask app and bind to all interfaces
-CMD ["uv", "run", "flask", "--app", "run.py", "run", "--host=0.0.0.0", "--port=5000"]
+# Run the application entrypoint directly (avoids flask reloader/debug process model)
+CMD ["uv", "run", "python", "run.py"]
