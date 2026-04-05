@@ -3,6 +3,16 @@ import string
 from peewee import IntegrityError
 from app.models.urls import Url
 
+
+def _extract_constraint_name(exc):
+    wrapped_exc = getattr(exc, "__cause__", None) or getattr(exc, "orig", None)
+    if wrapped_exc is not None:
+        diag = getattr(wrapped_exc, "diag", None)
+        if diag is not None:
+            return getattr(diag, "constraint_name", None)
+    return None
+
+
 # Define this here so app.services can import it
 class UrlConflictError(Exception):
     pass
@@ -42,8 +52,36 @@ class UrlService:
                 title=data.get("title")
             )
             return self.serialize_url(url)
-        except IntegrityError:
-            raise UrlConflictError("Shortcode already exists")
+        except IntegrityError as exc:
+            constraint_name = _extract_constraint_name(exc)
+            error_text = str(exc).lower()
+
+            # Recover from PK sequence drift and retry once.
+            if (constraint_name and "urls_pkey" in constraint_name) or "urls_pkey" in error_text:
+                Url._meta.database.execute_sql(
+                    """
+                    SELECT setval(
+                        pg_get_serial_sequence('urls', 'id'),
+                        COALESCE((SELECT MAX(id) FROM urls), 1),
+                        true
+                    )
+                    """
+                )
+                try:
+                    url = Url.create(
+                        user_id=user_id,
+                        shortcode=shortcode,
+                        original_url=original_url,
+                        title=data.get("title")
+                    )
+                    return self.serialize_url(url)
+                except IntegrityError as retry_exc:
+                    raise UrlConflictError("shortcode already exists") from retry_exc
+
+            if (constraint_name and "shortcode" in constraint_name) or "shortcode" in error_text:
+                raise UrlConflictError("shortcode already exists") from exc
+
+            raise UrlConflictError("database integrity conflict") from exc
 
     def list_urls(self, user_id=None, is_active=None):
         query = Url.select()
