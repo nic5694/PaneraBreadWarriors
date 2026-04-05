@@ -6,6 +6,7 @@ from peewee import IntegrityError
 
 from app.database import db
 from app.models.users import User
+from app.services.cache import cache
 
 class UserConflictError(Exception):
     pass
@@ -39,6 +40,9 @@ def _classify_user_integrity_error(exc):
     return "database integrity conflict"
 
 class UserService:
+    def __init__(self):
+        self.cache = cache
+
     def serialize_user(self, user):
         return {
             "id": user.id,
@@ -53,9 +57,15 @@ class UserService:
         """
         Updated to handle pagination. Fixes test_get_users_pagination.
         """
+        cached_users = self.cache.get_json("users", "list", page, per_page)
+        if cached_users is not None:
+            return cached_users
+
         # .paginate(page_number, items_per_page) is built into Peewee
         users = User.select().where(User.is_active).order_by(User.id).paginate(page, per_page)
-        return [self.serialize_user(user) for user in users]
+        serialized_users = [self.serialize_user(user) for user in users]
+        self.cache.set_json("users", "list", page, per_page, value=serialized_users)
+        return serialized_users
 
     def bulk_create_users(self, file_name, row_count):
         """
@@ -101,10 +111,17 @@ class UserService:
             raise ValueError(f"CSV Error: {str(e)}")
 
     def get_user(self, user_id):
+        cached_user = self.cache.get_json("users", "detail", user_id)
+        if cached_user is not None:
+            return cached_user
+
         user = User.get_or_none((User.id == user_id) & (User.is_active))
         if user is None:
             return None
-        return self.serialize_user(user)
+
+        serialized_user = self.serialize_user(user)
+        self.cache.set_json("users", "detail", user_id, value=serialized_user)
+        return serialized_user
 
     def create_user(self, data):
         name = data.get("name")
@@ -123,7 +140,9 @@ class UserService:
         except IntegrityError as exc:
             raise UserConflictError(_classify_user_integrity_error(exc)) from exc
 
-        return self.serialize_user(user)
+        serialized_user = self.serialize_user(user)
+        self.cache.invalidate_namespace("users")
+        return serialized_user
 
     def update_user(self, user_id, data):
         user = User.get_or_none((User.id == user_id) & (User.is_active))
@@ -147,7 +166,9 @@ class UserService:
         except IntegrityError as exc:
             raise UserConflictError(_classify_user_integrity_error(exc)) from exc
 
-        return self.serialize_user(user)
+        serialized_user = self.serialize_user(user)
+        self.cache.invalidate_namespace("users")
+        return serialized_user
 
     def delete_user(self, user_id):
         user = User.get_or_none((User.id == user_id) & (User.is_active))
@@ -156,4 +177,5 @@ class UserService:
 
         user.is_active = False
         user.save()
+        self.cache.invalidate_namespace("users")
         return True

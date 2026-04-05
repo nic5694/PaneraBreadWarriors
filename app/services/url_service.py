@@ -3,6 +3,7 @@ import string
 import logging
 from peewee import IntegrityError
 from app.models.urls import Url
+from app.services.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,9 @@ class UrlConflictError(Exception):
     pass
 
 class UrlService:
+    def __init__(self):
+        self.cache = cache
+
     def _generate_shortcode(self, length=6):
         chars = string.ascii_letters + string.digits
         return ''.join(secrets.choice(chars) for _ in range(length))
@@ -54,7 +58,9 @@ class UrlService:
                 original_url=original_url,
                 title=data.get("title")
             )
-            return self.serialize_url(url)
+            serialized_url = self.serialize_url(url)
+            self.cache.invalidate_namespace("urls")
+            return serialized_url
         except IntegrityError as exc:
             constraint_name = _extract_constraint_name(exc)
             error_text = str(exc).lower()
@@ -87,6 +93,12 @@ class UrlService:
             raise UrlConflictError("database integrity conflict") from exc
 
     def list_urls(self, user_id=None, is_active=None):
+        normalized_user_id = str(user_id) if user_id is not None else "all"
+        normalized_status = "default" if is_active is None else str(is_active).lower()
+        cached_urls = self.cache.get_json("urls", "list", normalized_user_id, normalized_status)
+        if cached_urls is not None:
+            return cached_urls
+
         try:
             query = Url.select()
             if user_id:
@@ -103,14 +115,25 @@ class UrlService:
                 else:
                     query = query.where(~Url.is_active)
             
-            return [self.serialize_url(u) for u in query]
+            urls = [self.serialize_url(u) for u in query]
+            self.cache.set_json("urls", "list", normalized_user_id, normalized_status, value=urls)
+            return urls
         except Exception as exc:
             logger.exception("Failed to list URLs with user_id=%s, is_active=%s", user_id, is_active)
             return []
 
     def get_url_by_id(self, url_id):
+        cached_url = self.cache.get_json("urls", "detail", url_id)
+        if cached_url is not None:
+            return cached_url
+
         url = Url.get_or_none(Url.id == url_id)
-        return self.serialize_url(url) if url else None
+        if not url:
+            return None
+
+        serialized_url = self.serialize_url(url)
+        self.cache.set_json("urls", "detail", url_id, value=serialized_url)
+        return serialized_url
 
     def update_url(self, url_id, data):
         url = Url.get_or_none(Url.id == url_id)
@@ -123,15 +146,27 @@ class UrlService:
             url.is_active = data["is_active"]
         
         url.save()
-        return self.serialize_url(url)
+        serialized_url = self.serialize_url(url)
+        self.cache.invalidate_namespace("urls")
+        return serialized_url
 
     def delete_url(self, url_id):
         url = Url.get_or_none(Url.id == url_id)
         if url:
             url.delete_instance()
+            self.cache.invalidate_namespace("urls")
             return True
         return False
 
     def resolve_shortcode(self, shortcode):
+        cached_url = self.cache.get_json("urls", "shortcode", shortcode)
+        if cached_url is not None:
+            return cached_url
+
         url = Url.get_or_none((Url.shortcode == shortcode) & (Url.is_active))
-        return url.original_url if url else None
+        if not url:
+            return None
+
+        original_url = url.original_url
+        self.cache.set_json("urls", "shortcode", shortcode, value=original_url)
+        return original_url

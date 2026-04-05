@@ -5,6 +5,7 @@ from peewee import IntegrityError
 
 from app.models.events import Event
 from app.models.urls import Url
+from app.services.cache import cache
 
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,9 @@ class EventCreateError(Exception):
 
 
 class EventService:
+    def __init__(self):
+        self.cache = cache
+
     def serialize_event(self, event):
         """
         Converts the Event model to a dict. 
@@ -45,6 +49,14 @@ class EventService:
         - test_get_events_by_url
         - test_get_events_by_type
         """
+        cache_key = "all"
+        if filters:
+            cache_key = json.dumps(filters, sort_keys=True, default=str)
+
+        cached_events = self.cache.get_json("events", "list", cache_key)
+        if cached_events is not None:
+            return cached_events
+
         query = Event.select()
 
         if filters:
@@ -58,7 +70,9 @@ class EventService:
 
         # Order by ID to keep the sequence predictable for tests
         events = query.order_by(Event.id)
-        return [self.serialize_event(event) for event in events]
+        serialized_events = [self.serialize_event(event) for event in events]
+        self.cache.set_json("events", "list", cache_key, value=serialized_events)
+        return serialized_events
 
     def create_event(self, data):
         url_id = data.get("url_id")
@@ -107,4 +121,6 @@ class EventService:
             logger.exception("Failed to create event. payload=%s error=%s", data, exc)
             raise EventCreateError(str(exc)) from exc
 
-        return self.serialize_event(event)
+        serialized_event = self.serialize_event(event)
+        self.cache.invalidate_namespace("events")
+        return serialized_event

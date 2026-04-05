@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  labels:
+    app: pgbouncer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pgbouncer
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+    spec:
+      containers:
+      - name: pgbouncer
+        image: pgbouncer/pgbouncer:1.24.1
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        - |
+          cat > /etc/pgbouncer/pgbouncer.ini <<'EOF'
+          [databases]
+          hackathon_db = host=postgres port=5432 dbname=hackathon_db user=postgres password=postgres
+
+          [pgbouncer]
+          listen_addr = 0.0.0.0
+          listen_port = 6432
+          auth_type = trust
+          pool_mode = transaction
+          max_client_conn = 2000
+          default_pool_size = 100
+          reserve_pool_size = 20
+          reserve_pool_timeout = 3
+          server_reset_query = DISCARD ALL
+          ignore_startup_parameters = extra_float_digits
+          admin_users = postgres
+          EOF
+          exec pgbouncer /etc/pgbouncer/pgbouncer.ini
+        ports:
+        - containerPort: 6432
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+        livenessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 2
