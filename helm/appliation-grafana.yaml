@@ -15,7 +15,7 @@ spec:
         adminPassword: "promgrafanapassword"
         service:
           type: LoadBalancer
-          loadBalancerIP: "192.168.2.205"
+          loadBalancerIP: "192.168.2.206"
         ingress:
           enabled: false
         persistence:
