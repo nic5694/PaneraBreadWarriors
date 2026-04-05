@@ -15,17 +15,11 @@ spec:
         adminPassword: "promgrafanapassword"
         service:
           type: LoadBalancer
+          loadBalancerIP: "192.168.2.203"
         ingress:
-          enabled: true
-          ingressClassName: traefik
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: web
-          hosts:
-            - grafana.homelab
-          path: /
-          pathType: Prefix
-        persistence:
           enabled: false
+        persistence:
+          enabled: true
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: monitoring
