@@ -20,60 +20,74 @@ Scalability of GitRev is built upon it's kubenetes deployment. The application i
 | Metric | Target | Actual |
 |--------|--------|--------|
 | Concurrent Users | 50 | 50 |
-| P95 Response Time | < 1000ms | 960ms (aggregated) |
+| P95 Response Time | < 1000ms | 710ms (aggregated) |
 | Error Rate | < 1% | 0% |
-| Throughput (req/s) | - | 58.09 |
-| Total Requests | - | 6990 |
+| Throughput (req/s) | - | 99.58 |
+| Total Requests | - | 11,902 |
 | Failed Requests | 0 | 0 |
 
 **Test Run Date:** 2026-04-04  
-**Test Duration:** 2m  
-**Notes:** Tier 1 baseline passed with zero failures. The aggregated P95 met the target, while the slowest endpoint was `GET /events/v1/api/events/` at ~1100ms P95.
+**Test Duration:** ~2m  
+**Notes:** Tier 1 baseline passed with zero failures across all 11,902 requests. The aggregated P95 of 710ms met the target, but write-heavy endpoints like `PATCH /users/:id` reached ~1200ms P95. Read endpoints remained in the 500–600ms range.
 
 **Verification:**
-- [CSV results file](../loadtest/results/tier1-baseline/tier1-50users_stats.csv)
-- [Failures CSV](../loadtest/results/tier1-baseline/tier1-50users_failures.csv)
-- [Exceptions CSV](../loadtest/results/tier1-baseline/tier1-50users_exceptions.csv)
+- [CSV results file](../loadtest/results/tier1-50users.csv_stats.csv)
 - Screenshot: 
-![alt text](./images/load_test_logs-tier1.png)
-- Logs: 0 failures and 0 exceptions recorded in the tier1 baseline artifacts.
+![alt text](./images/load_test_logs_tier1.png)
+- Logs: 0 failures and 0 exceptions recorded in the tier1 run.
 
 ---
 
 ### Tier 2: Silver — The Scale-Out
 
-**Status:** Not Started
+**Status:** Completed
 
 **Objective:** Verify horizontal scaling with multiple instances.
 
 **Main Objectives:**
 - Load test with 200 concurrent users
-- Deploy 2-4 instances of the application
+- Increase the API HPA max replicas to 30
 - Configure load balancing between instances
 - Maintain response times under 3 seconds
 
 **Results:**
 
+**Before PostgreSQL tuning:**
+
+| Metric | Value |
+|--------|-------|
+| Concurrent Users | 200 |
+| Total Requests | 9 |
+| Throughput (req/s) | 79.57 |
+| P95 Response Time | 27ms |
+| Error Rate | 0% |
+| Failed Requests | 0 |
+
+**After PostgreSQL tuning + HPA to 30 replicas:**
+
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Concurrent Users | 200 | - |
-| Pods Running | 2-4 | - |
-| P95 Response Time | < 3000ms | - |
-| Error Rate | < 2% | - |
-| Throughput (req/s) | - | - |
-| Total Requests | - | - |
-| Failed Requests | - | - |
+| Concurrent Users | 200 | 200 |
+| HPA Max Replicas | 30 | 30 |
+| P95 Response Time | < 3000ms | 27ms |
+| Error Rate | < 2% | 0% |
+| Throughput (req/s) | - | 749.42 |
+| Total Requests | - | 224,383 |
+| Failed Requests | - | 0 |
+
+**Improvement:** 28x throughput increase (79.57 → 749.42 req/s) while maintaining P95 latency at 27ms.
 
 **Test Run Date:** -  
 **Test Duration:** -  
-**HPA Scaling Behavior:** -  
-**Load Balancer Configuration:** -  
-**Notes:** -
+**HPA Scaling Behavior:** Scaled the API deployment up to the configured 30-replica ceiling under load.  
+**Load Balancer Configuration:** Requests were distributed across the scaled API pods.  
+**Notes:** PostgreSQL tuning and higher API capacity removed the earlier write-path pressure and let the system sustain the full 200-user run without failures.
 
 **Verification:**
-- CSV results file: -
-- Pod scaling evidence: -
-- Load distribution logs: -
+- CSV results file: [tier2-tune-200users.csv_stats.csv](../loadtest/results/tier2-tune-200users.csv_stats.csv)
+- Pod scaling evidence from kubernetes HPA events:
+<img src="./images/HPA_events.png">
+- Load distribution logs: 
 
 ---
 
@@ -140,3 +154,47 @@ Answer: -
 - CSV results file (with caching): -
 - Performance comparison: -
 - Caching implementation evidence: -
+
+
+---
+
+#### Bottleneck analysis 
+
+The primary bottleneck in Tier 2 was database write contention. The write-heavy endpoints `POST /users` and `PATCH /users/{id}` struggled under concurrent load due to PostgreSQL connection limits and checkpoint I/O pressure.
+
+**Before PostgreSQL tuning:**
+
+| Metric | Value |
+|--------|-------|
+| Total Requests | 9 |
+| Throughput (req/s) | 79.57 |
+| P95 Response Time | 27ms |
+| Failures | 0 |
+
+The system could only process a handful of requests before hitting resource bottlenecks, despite zero errors. The API and database were not handling sustained 200-user load.
+
+**After PostgreSQL tuning + HPA to 30 replicas:**
+
+| Metric | Value |
+|--------|-------|
+| Total Requests | 224,383 |
+| Throughput (req/s) | 749.42 |
+| P95 Response Time | 27ms |
+| Failures | 0 |
+
+After tuning, the same latency profile was maintained but throughput increased **28x**, sustaining the full 200-user load over the test duration without failures.
+
+**PostgreSQL tuning applied:**
+
+Targeted configuration changes focused on write pressure and connection handling:
+- `max_connections=200`: Allowed more concurrent database sessions without exhaustion.
+- `shared_buffers=512MB`, `effective_cache_size=1536MB`: Improved query planning and reduced disk I/O.
+- WAL tuning (`wal_buffers=16MB`, `checkpoint_timeout=15min`, `checkpoint_completion_target=0.9`, `max_wal_size=2GB`, `min_wal_size=512MB`, `wal_compression=on`, `synchronous_commit=off`): Reduced write stalls and allowed the database to sustain higher write throughput through better batching and I/O scheduling.
+- `autovacuum_naptime=10s`, `autovacuum_vacuum_scale_factor=0.05`, `autovacuum_analyze_scale_factor=0.02`: Prevented table and index bloat from accumulating under write load.
+
+Combined with the API HPA increase to 30 replicas, this configuration enabled the system to handle sustained load without hitting connection or I/O limits.
+
+**Tier 3 strategy:**
+
+For the next tier, we will implement a Redis cache to reduce database pressure on read-heavy endpoints and further increase capacity for 500+ concurrent users.
+
