@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: 'https://prometheus-community.github.io/helm-charts'
     targetRevision: 28.16.0
-    chart: prometheus-community
+    chart: prometheus
     helm:
       releaseName: prometheus
       # You can override default chart values here
