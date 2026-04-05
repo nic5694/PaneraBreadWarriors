@@ -22,6 +22,8 @@ def get_request_data():
         data = request.get_json(silent=True)
         if data is not None:
             return data
+        if request.form:
+            return request.form.to_dict()
         if request.data:
             return json.loads(request.data.decode('utf-8'))
     except Exception:
@@ -82,11 +84,11 @@ def create_user():
 
 @users_bp.route("/bulk", methods=["POST"])
 def bulk_create_users():
-    data = request.get_json(silent=True)
-    if data is None:
+    data = get_request_data()
+    if not data:
         return jsonify({"error": {"code": "BAD_REQUEST", "message": "Request body must be valid JSON"}}), 400
 
-    file_name = data.get("file")
+    file_name = data.get("file") or data.get("filename")
     row_count = data.get("row_count")
 
     if not file_name:

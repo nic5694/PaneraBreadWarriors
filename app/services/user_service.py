@@ -1,9 +1,11 @@
-from peewee import IntegrityError
-from app.models.users import User
 import csv
 import os
-from app.models.users import User
+from pathlib import Path
+
+from peewee import IntegrityError
+
 from app.database import db
+from app.models.users import User
 
 class UserConflictError(Exception):
     pass
@@ -59,17 +61,24 @@ class UserService:
         """
         Processes the CSV file. Fixes test_load_users_csv.
         """
-        file_path = os.path.join(os.getcwd(), file_name)
-        
-        if not os.path.exists(file_path):
-            # If the file isn't in root, check if it's in a /data folder
-            file_path = os.path.join(os.getcwd(), 'data', file_name)
-            if not os.path.exists(file_path):
-                raise ValueError(f"File {file_name} not found")
+        try:
+            row_count = int(row_count)
+        except (TypeError, ValueError):
+            raise ValueError("row_count must be an integer")
+
+        candidate_paths = [
+            Path(os.getcwd()) / file_name,
+            Path(os.getcwd()) / "data" / file_name,
+            Path(__file__).resolve().parents[2] / "seed" / file_name,
+        ]
+
+        file_path = next((path for path in candidate_paths if path.exists()), None)
+        if file_path is None:
+            raise ValueError(f"File {file_name} not found")
 
         users_to_create = []
         try:
-            with open(file_path, mode='r', encoding='utf-8-sig') as f:
+            with file_path.open(mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for i, row in enumerate(reader):
                     if i >= row_count:
