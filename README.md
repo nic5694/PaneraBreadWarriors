@@ -138,6 +138,22 @@ Overview of the Incident Response achieved and link to the deep dive of all the 
 
 [incident response](./docs/IncidentResponse.md)
 
+## Architecture Diagram
+
+<img src="https://plantuml.benmusicgeek.synology.me/png/TLHjZzeu4FwUNp47qhNz0BljlcWNeKXiW2ugxN90TITTgvD99i72iIFRsIsj-jyxTbwEJLi-8CVFCpFFCnxx1Gm60uYKJ7bMQcQval0dREnHS9avB307BWkcMGvcpnBrvFPJ9WoU85gLCecLbgZXvcG_LdcX94hh4Y9eZ2sJcJWDBLXyO1bMX9HsC0XUm1HJBf7YXT86KgL1g8p7J8115-Tq1dya5UljOlkmslmNFImVrj2VNyokvbSj62q_RhQpTOFEBkPlvjCMdVr3s8V9iWsUK_Xv40XCBLW5ccTx2mbtobr9akRwDVjYKKjICvEMMux6Tuh5beJsflY8GXNKYZE85ZrWXkmy1grvOgZuGF1zkQjG_qbVC1wlCUF6wcCOThGrfTzo-r0OTs9MAm4hmSY6grut4derumpUCqaRERM_zxn7tmAWtucWEcIDXVeanuP_nT7hyt2OSQiACt1U65apWnmj6vyvFFJAwxX-DBkzcDvqiqvqfY2QUgPRHrFetqskRwARu7jZvrsveqwYfHP6eZJKrkTcViPxdIFzoSmzYXoYFTFMV98lbyfDpKQLEiPNNeh7-xVdqMH-wsFzNrln0zedfGzkp3UMDdjrXKwLzzGAiRpp6UlrhsXRpMZI3h2GcKPZFBtUy_Jllr3mDvKNYYM_gJnPBM23-f77wDFLwzzHfrW8TNHJG4Ux2xSi6q6Xa_7PBgndiy6XVtrvTpM_xWfBc6KxPYZVIXbBFZP_BNre_MdylRcwdNROQqnuvTYlMbPx-7EXdcXEroZyXJPxNbGtYV3NGzZkwVekOAbK4T0D8YGykIiZM9LcJyLvJbqRaQMML8_b23uMf8OeEPCyHUElj2DI_ZTL_fhgQzJhyQ2PLYgXXAZUdtXFFKKJrD3WttvHwaBWPoVg_nQEO7EKiG5ZgN137Wx3Qkf6S7zCj9TaCI-4Mpan5vMOTKdFIOwDupRfWAhjH8cVk_wTE6y_g4SGI4qpSaJGwf4dLAnzhnQhe869MKyECTUgTA9OmOTxbTDvx886xFgZf5_SYsSrIrCUE_cNGqT1cQ2C2NekFMp7fBllfoBu0G00" alt="Architecture Diagram" />
+
+### How It Works
+
+- The GitOps repo is the source of truth for cluster state.
+- The GitOps operator repo, [gitops-operators-hackathon-meta](https://github.com/nic5694/gitops-operators-hackathon-meta), installs and manages the Argo CD and MetalLB operators for the cluster.
+- That operator repo also creates the Argo CD Application that points at this repository's [./helm](./helm) folder.
+- Argo CD continuously reconciles the Helm manifests into the Kubernetes cluster.
+- MetalLB assigns the external IP that exposes Traefik.
+- Traefik is the cluster ingress controller, routes traffic to the API Service, and the Service points to the API Deployment.
+- The API is reachable at `api.homelab` through the [Ingress manifest](./helm/api-ingress.yaml).
+- Deployments are tag-driven, so when the `prd` tag changes, the workload rolls forward from the updated image reference.
+- The API deployment, service, ingress, PostgreSQL, and Redis resources are all managed from the Helm manifests in this repo.
+
 # Team
 - Nic Martoccia
 - Han Lee

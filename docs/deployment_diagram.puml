@@ -1,0 +1,69 @@
+@startuml
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam componentStyle rectangle
+skinparam packageStyle frame
+
+!define GITOPS_COLOR #F3E5F5
+!define CLUSTER_COLOR #E3F2FD
+!define EXTERNAL_COLOR #FFF3E0
+!define ACTION_COLOR #E8F5E9
+
+left to right direction
+
+' --- Actors & CI/CD ---
+actor "Developer" as Dev
+package "GitHub" ACTION_COLOR {
+    rectangle "App Source Code" as Source #C8E6C9
+    rectangle "GitHub Actions\n(CI Pipeline)" as GHA #81C784
+}
+
+' --- External Registry ---
+rectangle "Docker Hub" as DockerHub <<Registry>> EXTERNAL_COLOR
+
+' --- GitOps Control Plane ---
+package "GitOps / Management" GITOPS_COLOR {
+    rectangle "GitOps Repo\n.gitops-operators-meta" as GitOps #CE93D8
+    rectangle "Argo CD" as ArgoCD #BA68C8
+}
+
+' --- Kubernetes Cluster ---
+package "Kubernetes Cluster" CLUSTER_COLOR {
+    rectangle "Helm Charts" as Helm #90CAF9
+    
+    package "Ingress Stack" {
+        rectangle "MetalLB" as MetalLB
+        rectangle "Traefik Ingress" as Traefik
+    }
+    
+    package "Workload" {
+        rectangle "API Deployment\n<b>Tag: prd</b>" as Deployment #64B5F6
+        rectangle "API Service" as Service
+    }
+    
+    database "PostgreSQL" as Postgres #FFF59D
+    database "Redis" as Redis #FFF59D
+}
+
+' 1. CI Pipeline
+Dev --> Source : git push
+Source --> GHA : triggers workflow
+GHA --> DockerHub : 1. build & push image:prd
+GHA --> GitOps : 2. update image tag in manifests
+
+' 2. GitOps Reconciliation
+GitOps <- ArgoCD : watches for changes
+ArgoCD -[#purple]-> Deployment : syncs desired state
+ArgoCD ..> Helm : templates manifests
+
+' 3. Runtime
+Deployment --[#blue]> DockerHub : pulls image:prd
+MetalLB -> Traefik : allocates VIP
+Traefik -> Service : routes traffic
+Service -> Deployment : forwards to pods
+
+' 4. Persistence
+Deployment --> Postgres
+Deployment --> Redis
+
+@enduml
