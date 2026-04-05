@@ -1,0 +1,35 @@
+Count,Message,Traceback,Nodes
+2,"URL http://api.homelab//users: 0, original=[Errno 10060] [WinError 10060] A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.","  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\user\task.py"", line 363, in run
+    self.execute_next_task()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\user\task.py"", line 396, in execute_next_task
+    self.execute_task(self._task_queue.popleft())
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\user\task.py"", line 510, in execute_task
+    task(self.user).run()
+    ~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\user\task.py"", line 348, in run
+    self.on_start()
+    ~~~~~~~~~~~~~^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\loadtest\load_test.py"", line 78, in on_start
+    self._create_user_with_retry()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\loadtest\load_test.py"", line 34, in _create_user_with_retry
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\contrib\fasthttp.py"", line 660, in raise_for_status
+    raise self.error
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\contrib\fasthttp.py"", line 300, in request
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\contrib\fasthttp.py"", line 660, in raise_for_status
+    raise self.error
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\locust\contrib\fasthttp.py"", line 170, in _send_request_safe_mode
+    return self.client.urlopen(url, method=method, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\geventhttpclient\useragent.py"", line 454, in urlopen
+    return self._handle_retries_exceeded(url, last_error=last_error)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""C:\Users\Grif2\PaneraBreadWarriors\.venv\Lib\site-packages\geventhttpclient\useragent.py"", line 338, in _handle_retries_exceeded
+    raise RetriesExceeded(url, self.max_retries, original=last_error)
+",local

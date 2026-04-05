@@ -1,0 +1,7 @@
+Method,Name,Error,Occurrences
+GET,GET /health,LocustBadStatusCode(code=500),9
+GET,GET /events,LocustBadStatusCode(code=500),3
+GET,GET /r/:shortcode,LocustBadStatusCode(code=500),2
+GET,GET /users/:id,LocustBadStatusCode(code=500),5
+PATCH,PATCH /users/:id,LocustBadStatusCode(code=500),1
+GET,GET /users,LocustBadStatusCode(code=500),4
