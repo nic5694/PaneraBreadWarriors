@@ -31,20 +31,10 @@ def list_users():
     try:
         users_data = user_service.list_users(page=page, per_page=per_page)
         
-        if isinstance(users_data, dict) and "sample" in users_data:
-            users_data["sample"] = [_format_user(u) for u in users_data["sample"]]
-            return jsonify({"data": users_data}), 200
-            
         formatted = [_format_user(u) for u in users_data]
-        return jsonify({
-            "data": {
-                "kind": "list",
-                "sample": formatted,
-                "total_items": len(formatted)
-            }
-        }), 200
+        return jsonify({"data": formatted}), 200
     except Exception:
-        return jsonify({"data": {"kind": "list", "sample": [], "total_items": 0}}), 200
+        return jsonify({"data": []}), 200
 
 
 @users_bp.route("/<int:user_id>", methods=["GET"])
@@ -62,8 +52,6 @@ def create_user():
 
     if "username" in data and "name" not in data:
         data["name"] = data["username"]
-    if "password" not in data:
-        data["password"] = "autograder_pw_123"
 
     try:
         user = user_service.create_user(data)

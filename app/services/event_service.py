@@ -20,27 +20,14 @@ class EventCreateError(Exception):
 
 class EventService:
     def serialize_event(self, event):
-        """
-        Converts a Peewee Event model instance into a dictionary.
-        Handles JSON parsing for the 'details' field to ensure the 
-        API returns structured data.
-        """
-        details = event.details
-        # Advanced Challenge #6: Ensure 'details' is returned as a JSON object, not a string
-        if isinstance(details, str):
-            try:
-                details = json.loads(details)
-            except (ValueError, TypeError):
-                # If it's not valid JSON, return the raw string
-                pass
-
+        """Converts a Peewee Event model instance into a dictionary."""
         return {
             "id": event.id,
             "url_id": event.url_id,
             "user_id": event.user_id,
             "event_type": event.event_type,
             "timestamp": event.timestamp.isoformat() if hasattr(event.timestamp, 'isoformat') else event.timestamp,
-            "details": details,
+            "details": event.details,
             "created_at": event.created_at.isoformat() if hasattr(event.created_at, 'isoformat') else event.created_at,
             "updated_at": event.updated_at.isoformat() if hasattr(event.updated_at, 'isoformat') else event.updated_at,
         }
