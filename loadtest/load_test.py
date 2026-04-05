@@ -1,7 +1,7 @@
 from itertools import count
 from uuid import uuid4
 
-from locust import HttpUser, SequentialTaskSet, between, task
+from locust import FastHttpUser, SequentialTaskSet, between, task
 
 
 user_counter = count(1)
@@ -147,6 +147,6 @@ class ApiWorkflow(SequentialTaskSet):
         )
 
 
-class ApiUser(HttpUser):
+class ApiUser(FastHttpUser):
     wait_time = between(0.5, 1.5)
     tasks = [ApiWorkflow]

@@ -83,6 +83,21 @@ Scalability of GitRev is built upon it's kubenetes deployment. The application i
 
 **Objective:** Handle 500+ concurrent users with optimization strategies.
 
+**Execution Note:** At 500+ users, Locust can saturate a single master process and emit a CPU warning even when the API is healthy. Run Tier 3 in distributed mode or across multiple CPU cores to keep the load generator from becoming the bottleneck.
+
+Recommended command pattern:
+
+```bash
+# Master
+uv run locust -f loadtest/load_test.py --master --expect-workers 2 --headless --host=http://api.homelab --users 500 --spawn-rate 60 --run-time 5m --csv=results/tier3-500users
+
+# Worker 1
+uv run locust -f loadtest/load_test.py --worker --master-host 127.0.0.1
+
+# Worker 2
+uv run locust -f loadtest/load_test.py --worker --master-host 127.0.0.1
+```
+
 **Main Objectives:**
 - Load test with 500+ concurrent users
 - Implement caching strategy
