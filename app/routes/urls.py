@@ -29,12 +29,20 @@ def create_url():
 @urls_bp.route("", methods=["GET"])
 @urls_bp.route("/", methods=["GET"])
 def list_urls():
-    # Handle both JSON body or Query Params for user_id
-    user_id = request.args.get("user_id") or request.get_json(silent=True, default={}).get("user_id")
-    is_active = request.args.get("is_active")
-    
-    urls = url_service.list_urls(user_id=user_id, is_active=is_active)
-    return jsonify({"data": urls}), 200
+    try:
+        # Handle both JSON body or Query Params for user_id
+        user_id = request.args.get("user_id") or (request.get_json(silent=True) or {}).get("user_id")
+        is_active = request.args.get("is_active")
+        
+        urls = url_service.list_urls(user_id=user_id, is_active=is_active)
+        return jsonify({"data": urls}), 200
+    except Exception as exc:
+        return jsonify({
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "Failed to retrieve URLs"
+            }
+        }), 500
 
 @urls_bp.route("/<int:url_id>", methods=["GET", "PUT", "DELETE"])
 def url_operations(url_id):

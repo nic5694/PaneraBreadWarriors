@@ -1,7 +1,10 @@
 import secrets
 import string
+import logging
 from peewee import IntegrityError
 from app.models.urls import Url
+
+logger = logging.getLogger(__name__)
 
 
 def _extract_constraint_name(exc):
@@ -84,22 +87,26 @@ class UrlService:
             raise UrlConflictError("database integrity conflict") from exc
 
     def list_urls(self, user_id=None, is_active=None):
-        query = Url.select()
-        if user_id:
-            query = query.where(Url.user_id == user_id)
-        
-        # Default to only active URLs unless explicitly set
-        if is_active is None:
-            query = query.where(Url.is_active)
-        else:
-            # Handle both boolean and string "true"/"false"
-            status = str(is_active).lower() == 'true' if isinstance(is_active, str) else bool(is_active)
-            if status:
+        try:
+            query = Url.select()
+            if user_id:
+                query = query.where(Url.user_id == user_id)
+            
+            # Default to only active URLs unless explicitly set
+            if is_active is None:
                 query = query.where(Url.is_active)
             else:
-                query = query.where(~Url.is_active)
-        
-        return [self.serialize_url(u) for u in query]
+                # Handle both boolean and string "true"/"false"
+                status = str(is_active).lower() == 'true' if isinstance(is_active, str) else bool(is_active)
+                if status:
+                    query = query.where(Url.is_active)
+                else:
+                    query = query.where(~Url.is_active)
+            
+            return [self.serialize_url(u) for u in query]
+        except Exception as exc:
+            logger.exception("Failed to list URLs with user_id=%s, is_active=%s", user_id, is_active)
+            return []
 
     def get_url_by_id(self, url_id):
         url = Url.get_or_none(Url.id == url_id)
