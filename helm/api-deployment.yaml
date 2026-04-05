@@ -28,9 +28,9 @@ spec:
         - name: DATABASE_NAME
           value: hackathon_db
         - name: DATABASE_HOST
-          value: pgbouncer
+          value: postgres
         - name: DATABASE_PORT
-          value: "6432"
+          value: "5432"
         - name: DATABASE_USER
           value: postgres
         - name: DATABASE_PASSWORD
