@@ -124,7 +124,7 @@ Scalability of GitRev is built upon it's kubenetes deployment. The application i
 **Database Connection Peak:** -  
 **Notes:** Redis caching successfully reduced database load and allowed the system to sustain 500 concurrent users with sub-500ms P95 latency and near-zero error rate. The write endpoints (`POST /users`, `PATCH /users/:id`) showed higher latency spikes but remained well within acceptable bounds under heavy load.
 
-**Bottleneck Analysis:**
+# Bottleneck Analysis:
 
 Question: What was the primary bottleneck?  
 Answer: Without caching, database read contention on the `/events` and `/users` endpoints would have limited throughput at 500 concurrent users.
