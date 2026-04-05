@@ -30,4 +30,14 @@ def create_app(seed_data=None):
     def health():
         return jsonify(status="ok"), 200
 
+    @app.route("/ready")
+    def ready():
+        # Readiness endpoint: do not receive traffic until DB is reachable.
+        try:
+            with db.connection_context():
+                db.execute_sql("SELECT 1")
+            return jsonify(status="ready"), 200
+        except Exception as exc:
+            return jsonify(status="not_ready", reason=str(exc)), 503
+
     return app
