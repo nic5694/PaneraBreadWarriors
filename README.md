@@ -68,7 +68,7 @@ Track #3 Incident Response
 
 ```bash
 # 1. Clone the repo
-git clone <repo-url> && cd mlh-pe-hackathon
+git clone https://github.com/nic5694/PaneraBreadWarriors
 
 # 2. Install dependencies
 uv sync
