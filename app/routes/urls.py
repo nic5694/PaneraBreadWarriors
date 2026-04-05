@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, redirect
+from flask import Blueprint, jsonify, request
 from app.services import UrlService, UrlConflictError
 
 urls_bp = Blueprint("urls", __name__)
@@ -62,11 +62,3 @@ def url_operations(url_id):
     if request.method == "DELETE":
         url_service.delete_url(url_id)
         return "", 204
-
-
-@urls_bp.route("/<string:shortcode>", methods=["GET"])
-def resolve_shortcode(shortcode):
-    original_url = url_service.resolve_shortcode(shortcode)
-    if not original_url:
-        return jsonify({"error": {"code": "NOT_FOUND", "message": "Shortcode not found"}}), 404
-    return redirect(original_url, code=302)
