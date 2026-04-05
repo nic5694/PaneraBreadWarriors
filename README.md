@@ -37,7 +37,6 @@ Better observability, distributed Locust runs for higher load, caching for the h
 
 Track #1 Reliability
 Track #2 Scalability
-Track #3 Incident Response
 
 ## Prerequisites
 
@@ -83,12 +82,7 @@ curl http://localhost:5000/health
 
 ## Reset For Load Tests 
 
-We have had issues when running load tests that the database gets into a bad state after a run, with sequence drift and bad seed data. To fix this, we have a Kubernetes Job that can be run to clear persisted rows and reseed the cluster database before a stress run. The Job is suspended by default so it won't run accidentally, but you can resume it with the following command:
-
-```bash
-kubectl apply -f helm/reset-load-test-job.yaml
-kubectl wait --for=condition=complete job/reset-load-test-data --timeout=120s
-```
+We have had issues when running load tests that the database gets into a bad state after a run, with sequence drift and bad seed data. To fix this, we have a Kubernetes Job that can be run to clear persisted rows and reseed the cluster database before a stress run. The Job is suspended by default so it won't run accidentally.
 
 ## Project Structure
 
@@ -174,11 +168,6 @@ Overview of the Incident Response achieved and link to the deep dive of all the 
 - Han Lee
 - Luciano Scarpaci
 - Dylan Brassard
-
-# screenshots
-![Screenshot 1](screenshots/pipeline.png)
-![Screenshot 2](screenshots/server.png)
-![Screenshot 3](screenshots/totalrequests.png)
 
 # Demo
 https://youtu.be/DaYzd9Q0o4g?si=uLD6lfFKjFQUdPnz
