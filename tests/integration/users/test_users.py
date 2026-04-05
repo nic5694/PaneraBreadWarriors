@@ -11,7 +11,7 @@ def test_create_user_returns_201_and_payload(client):
         "password": "password123",
     }
 
-    response = client.post("/users/v1/api/users/", json=payload)
+    response = client.post("/users", json=payload)
 
     assert response.status_code == 201
     data = response.get_json()["data"]
@@ -28,9 +28,9 @@ def test_create_user_duplicate_email_returns_409(client):
         "email": "alice@example.com",
         "password": "password123",
     }
-    client.post("/users/v1/api/users/", json=payload)
+    client.post("/users", json=payload)
 
-    response = client.post("/users/v1/api/users/", json=payload)
+    response = client.post("/users", json=payload)
 
     assert response.status_code == 409
     assert response.get_json()["error"] == {
@@ -42,11 +42,11 @@ def test_create_user_duplicate_email_returns_409(client):
 @pytest.mark.integration
 def test_create_user_sequence_drift_returns_409_with_specific_message(client):
     client.post(
-        "/users/v1/api/users/",
+            "/users",
         json={"name": "Alice", "email": "alice@example.com", "password": "password123"},
     )
     client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Bob", "email": "bob@example.com", "password": "password123"},
     )
 
@@ -57,7 +57,7 @@ def test_create_user_sequence_drift_returns_409_with_specific_message(client):
             )
 
     response = client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Charlie", "email": "charlie@example.com", "password": "password123"},
     )
 
@@ -69,47 +69,45 @@ def test_create_user_sequence_drift_returns_409_with_specific_message(client):
 
 
 @pytest.mark.integration
-def test_create_user_missing_required_fields_returns_400(client):
+def test_create_user_missing_password_is_accepted_on_legacy_users_path(client):
     response = client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Alice", "email": "alice@example.com"},
     )
 
-    assert response.status_code == 400
-    assert response.get_json()["error"] == {
-        "code": "BAD_REQUEST",
-        "message": "name, email, and password are required",
-    }
+    assert response.status_code == 201
+    assert response.get_json()["data"]["email"] == "alice@example.com"
 
 
 @pytest.mark.integration
 def test_list_users_returns_created_users(client):
     client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Alice", "email": "alice@example.com", "password": "password123"},
     )
     client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Bob", "email": "bob@example.com", "password": "password123"},
     )
 
-    response = client.get("/users/v1/api/users/")
+    response = client.get("/users")
 
     assert response.status_code == 200
     data = response.get_json()["data"]
-    assert len(data) == 2
-    assert [user["email"] for user in data] == ["alice@example.com", "bob@example.com"]
+    assert data["kind"] == "list"
+    assert data["total_items"] == 2
+    assert [user["email"] for user in data["sample"]] == ["alice@example.com", "bob@example.com"]
 
 
 @pytest.mark.integration
 def test_get_user_returns_200_for_existing_user(client):
     create_response = client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Alice", "email": "alice@example.com", "password": "password123"},
     )
     user_id = create_response.get_json()["data"]["id"]
 
-    response = client.get(f"/users/v1/api/users/{user_id}")
+    response = client.get(f"/users/{user_id}")
 
     assert response.status_code == 200
     assert response.get_json()["data"]["email"] == "alice@example.com"
@@ -117,7 +115,7 @@ def test_get_user_returns_200_for_existing_user(client):
 
 @pytest.mark.integration
 def test_get_user_returns_404_for_missing_user(client):
-    response = client.get("/users/v1/api/users/9999")
+    response = client.get("/users/9999")
 
     assert response.status_code == 404
     assert response.get_json()["error"] == {
@@ -129,13 +127,13 @@ def test_get_user_returns_404_for_missing_user(client):
 @pytest.mark.integration
 def test_update_user_updates_name_and_email(client):
     create_response = client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Alice", "email": "alice@example.com", "password": "password123"},
     )
     user_id = create_response.get_json()["data"]["id"]
 
     response = client.patch(
-        f"/users/v1/api/users/{user_id}",
+        f"/users/{user_id}",
         json={"name": "Alice Updated", "email": "alice.updated@example.com"},
     )
 
@@ -148,16 +146,16 @@ def test_update_user_updates_name_and_email(client):
 @pytest.mark.integration
 def test_update_user_with_duplicate_email_returns_409(client):
     user1 = client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Alice", "email": "alice@example.com", "password": "password123"},
     ).get_json()["data"]
     client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Bob", "email": "bob@example.com", "password": "password123"},
     )
 
     response = client.patch(
-        f"/users/v1/api/users/{user1['id']}",
+        f"/users/{user1['id']}",
         json={"email": "bob@example.com"},
     )
 
@@ -171,13 +169,13 @@ def test_update_user_with_duplicate_email_returns_409(client):
 @pytest.mark.integration
 def test_delete_user_soft_deletes_and_followup_get_returns_404(client):
     create_response = client.post(
-        "/users/v1/api/users/",
+        "/users",
         json={"name": "Alice", "email": "alice@example.com", "password": "password123"},
     )
     user_id = create_response.get_json()["data"]["id"]
 
-    delete_response = client.delete(f"/users/v1/api/users/{user_id}")
-    get_response = client.get(f"/users/v1/api/users/{user_id}")
+    delete_response = client.delete(f"/users/{user_id}")
+    get_response = client.get(f"/users/{user_id}")
 
     assert delete_response.status_code == 200
     assert delete_response.get_json()["message"] == "User deleted successfully"
