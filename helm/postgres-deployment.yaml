@@ -16,39 +16,41 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:16
+        image: postgres:18
         imagePullPolicy: IfNotPresent
         args:
         - -c
-        - max_connections=200
+        - max_connections=1000
         - -c
-        - shared_buffers=512MB
+        - shared_buffers=1GB
         - -c
-        - effective_cache_size=1536MB
-        - -c
-        - work_mem=8MB
+        - effective_cache_size=3GB
         - -c
         - maintenance_work_mem=256MB
         - -c
-        - wal_buffers=16MB
-        - -c
-        - checkpoint_timeout=15min
-        - -c
         - checkpoint_completion_target=0.9
         - -c
-        - max_wal_size=2GB
+        - wal_buffers=16MB
         - -c
-        - min_wal_size=512MB
+        - default_statistics_target=100
         - -c
-        - wal_compression=on
+        - random_page_cost=1.1
         - -c
-        - synchronous_commit=off
+        - effective_io_concurrency=200
         - -c
-        - autovacuum_naptime=10s
+        - work_mem=4MB
         - -c
-        - autovacuum_vacuum_scale_factor=0.05
+        - huge_pages=off
         - -c
-        - autovacuum_analyze_scale_factor=0.02
+        - jit=off
+        - -c
+        - wal_compression=lz4
+        - -c
+        - io_method=io_uring
+        - -c
+        - min_wal_size=1GB
+        - -c
+        - max_wal_size=4GB
         ports:
         - containerPort: 5432
           protocol: TCP
