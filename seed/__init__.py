@@ -10,6 +10,7 @@ from app.models.users import User
 
 
 SEED_DIR = Path(__file__).resolve().parent
+SEED_LOCK_KEY = 913_004_227
 
 
 def _parse_bool(value):
@@ -46,62 +47,93 @@ def _sync_sequence(model):
 
 
 def seed_users():
-    User.delete().execute()
+    users_to_create = []
 
     with (SEED_DIR / "users.csv").open(newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
 
         for row in reader:
-            User.create(
-                id=int(row["id"]),
-                name=row["username"],
-                email=row["email"],
-                password_hash=row["username"],
-                created_at=_parse_datetime(row["created_at"]),
+            users_to_create.append(
+                {
+                    "id": int(row["id"]),
+                    "name": row["username"],
+                    "email": row["email"],
+                    "password_hash": row["username"],
+                    "created_at": _parse_datetime(row["created_at"]),
+                }
             )
+
+    if users_to_create:
+        User.insert_many(users_to_create).on_conflict_ignore().execute()
 
 
 def seed_urls():
-    Url.delete().execute()
+    urls_to_create = []
 
     with (SEED_DIR / "urls.csv").open(newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
 
         for row in reader:
-            Url.create(
-                id=int(row["id"]),
-                user_id=str(row["user_id"]) if row["user_id"] else None,
-                shortcode=row["short_code"],
-                original_url=row["original_url"],
-                title=row["title"] or None,
-                is_active=_parse_bool(row["is_active"]),
-                created_at=_parse_datetime(row["created_at"]),
-                updated_at=_parse_datetime(row["updated_at"]),
+            urls_to_create.append(
+                {
+                    "id": int(row["id"]),
+                    "user_id": str(row["user_id"]) if row["user_id"] else None,
+                    "shortcode": row["short_code"],
+                    "original_url": row["original_url"],
+                    "title": row["title"] or None,
+                    "is_active": _parse_bool(row["is_active"]),
+                    "created_at": _parse_datetime(row["created_at"]),
+                    "updated_at": _parse_datetime(row["updated_at"]),
+                }
             )
+
+    if urls_to_create:
+        Url.insert_many(urls_to_create).on_conflict_ignore().execute()
 
 
 def seed_events():
-    Event.delete().execute()
+    events_to_create = []
 
     with (SEED_DIR / "events.csv").open(newline="", encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
 
         for row in reader:
-            Event.create(
-                id=int(row["id"]),
-                url_id=str(row["url_id"]),
-                user_id=str(row["user_id"]) if row["user_id"] else None,
-                event_type=row["event_type"],
-                timestamp=_parse_datetime(row["timestamp"]),
-                details=json.loads(row["details"]) if row["details"] else None,
+            events_to_create.append(
+                {
+                    "id": int(row["id"]),
+                    "url_id": str(row["url_id"]),
+                    "user_id": str(row["user_id"]) if row["user_id"] else None,
+                    "event_type": row["event_type"],
+                    "timestamp": _parse_datetime(row["timestamp"]),
+                    "details": json.loads(row["details"]) if row["details"] else None,
+                }
             )
+
+    if events_to_create:
+        Event.insert_many(events_to_create).on_conflict_ignore().execute()
+
+
+def _acquire_seed_lock():
+    cursor = db.execute_sql("SELECT pg_try_advisory_lock(%s)", (SEED_LOCK_KEY,))
+    row = cursor.fetchone()
+    return bool(row and row[0])
+
+
+def _release_seed_lock():
+    db.execute_sql("SELECT pg_advisory_unlock(%s)", (SEED_LOCK_KEY,))
 
 
 def seed_database():
     with db.atomic():
-        seed_users()
-        seed_urls()
-        seed_events()
-        _sync_sequence(User)
-        _sync_sequence(Url)
-        _sync_sequence(Event)
+        if not _acquire_seed_lock():
+            return
+
+        try:
+            seed_users()
+            seed_urls()
+            seed_events()
+            _sync_sequence(User)
+            _sync_sequence(Url)
+            _sync_sequence(Event)
+        finally:
+            _release_seed_lock()

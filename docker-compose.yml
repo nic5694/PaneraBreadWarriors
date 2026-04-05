@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: uv run flask --app run.py run --host=0.0.0.0 --port=5000
+    command: sh -c "uv run python scripts/seed_database.py && uv run flask --app run.py run --host=0.0.0.0 --port=5000"
     depends_on:
       postgres:
         condition: service_healthy

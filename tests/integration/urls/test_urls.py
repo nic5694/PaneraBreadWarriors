@@ -27,6 +27,23 @@ def test_create_url_returns_201_and_payload(client):
     response = client.post("/urls", json=payload)
     assert response.status_code == 201
 
+
+@pytest.mark.integration
+def test_create_url_with_trailing_slash_returns_201(client):
+    user_id = _ensure_user_exists(client)
+    unique_code = f"slash-{uuid.uuid4().hex[:6]}"
+    payload = {
+        "user_id": user_id,
+        "shortcode": unique_code,
+        "original_url": f"https://example.com/{unique_code}",
+        "title": "Slash Route",
+    }
+
+    response = client.post("/urls/", json=payload)
+
+    assert response.status_code == 201
+    assert response.get_json()["data"]["shortcode"] == unique_code
+
 @pytest.mark.integration
 def test_create_url_duplicate_shortcode_returns_409(client):
     user_id = _ensure_user_exists(client)
@@ -79,3 +96,22 @@ def test_resolve_shortcode_redirects_returns_302(client):
     response = client.get(f"/urls/{unique_code}", follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["Location"] == "https://example.com/go"
+
+
+@pytest.mark.integration
+def test_resolve_shortcode_redirects_returns_302_on_r_prefix(client):
+    user_id = _ensure_user_exists(client)
+    unique_code = f"r-{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/urls",
+        json={
+            "user_id": user_id,
+            "shortcode": unique_code,
+            "original_url": "https://example.com/r-route",
+        },
+    )
+
+    response = client.get(f"/r/{unique_code}", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "https://example.com/r-route"

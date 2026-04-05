@@ -16,6 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app import create_app
 from app.database import db
+from seed import seed_database
 
 
 DOCKER_COMPOSE_FILE = PROJECT_ROOT / "docker-compose.yml"
@@ -110,6 +111,7 @@ def client(postgres_service):
     with app.app_context():
         with db.connection_context():
             db.execute_sql("TRUNCATE TABLE events, urls, users RESTART IDENTITY CASCADE;")
+            seed_database()
 
     with app.test_client() as test_client:
         yield test_client
